@@ -10,7 +10,7 @@ if %errorlevel% neq 0 (
 )
 
 
-python run_server.bat
+python run_app.py
 
 :end
 echo.
