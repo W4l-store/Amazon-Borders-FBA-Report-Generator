@@ -6,14 +6,21 @@ def install_requirements():
     subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas", "pyngrok", "python-dotenv"])
     print("Libraries installed successfully.")
 
-install_requirements()
 
+try:
+    import time
+    import os
+    import signal
+    from dotenv import load_dotenv
+    from pyngrok import ngrok
+except :
+    install_requirements()
+    import time
+    import os
+    import signal
+    from dotenv import load_dotenv
+    from pyngrok import ngrok
 
-import time
-import os
-import signal
-from dotenv import load_dotenv
-from pyngrok import ngrok
 
 # Load environment variables
 load_dotenv()

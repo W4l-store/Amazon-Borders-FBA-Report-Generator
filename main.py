@@ -78,22 +78,22 @@ def columns_to_lower_case(df):
 def create_data_frame_from_file(directory):
     """
     Reads a file from the specified directory and returns a DataFrame.
-    Assumes there is only one file in the directory.
+    Assumes there is only one file (excluding .gitkeep) in the directory.
     Supports CSV, TXT, and TSV files.
     Skips initial lines depending on the directory name.
     """
-    # List files in the directory
+    # List files in the directory, excluding .gitkeep
     try:
-        files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+        files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and f != '.gitkeep']
     except FileNotFoundError:
         print(f"Directory '{directory}' not found.")
         return None
 
-    # Check if there is exactly one file
+    # Check if there is exactly one file (excluding .gitkeep)
     if not files:
-        raise ValueError(f"No files found in directory '{directory}'")
+        raise ValueError(f"No valid files found in directory '{directory}'")
     if len(files) > 1:
-        raise ValueError(f"More than one file found in directory '{directory}'")
+        raise ValueError(f"More than one valid file found in directory '{directory}'")
 
     file = files[0]
     file_path = os.path.join(directory, file)
