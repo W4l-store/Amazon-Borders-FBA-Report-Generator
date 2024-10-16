@@ -1,5 +1,5 @@
 @echo off
-echo Welcome to the Amazon Report Generator
+echo Welcome to the Amazon Borders FBA Report Generator
 
 REM Check if Python is installed
 python --version >nul 2>&1

@@ -8,6 +8,7 @@
 !main.py
 !RUN.bat
 !run_server.bat
+!ngrok.exe
 
 # Don't ignore the 'data' directory, but ignore its contents
 !/data/
