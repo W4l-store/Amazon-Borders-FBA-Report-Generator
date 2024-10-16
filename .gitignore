@@ -11,6 +11,7 @@
 !CLEAN_FOLDERS.bat
 !copy_and_clean.py
 !README.txt
+!import_report.gs
 # Don't ignore the 'data' directory, but ignore its contents
 !/data/
 /data/*
