@@ -10,7 +10,7 @@
 !ngrok.exe
 !CLEAN_FOLDERS.bat
 !copy_and_clean.py
-
+!README.txt
 # Don't ignore the 'data' directory, but ignore its contents
 !/data/
 /data/*
