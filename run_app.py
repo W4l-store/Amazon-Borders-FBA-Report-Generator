@@ -81,7 +81,7 @@ def print_instructions(public_url):
     print("\nServer is running. Please follow these steps:")
     print("1. Go to Google Docs")
     print("2. Open Extensions -> Macros")
-    print("3. Run the macro 'import_csv'")
+    print("3. Run the macro 'import_report'")
     print("4. If successful, a new tab with the report will be created")
     print("5. If an error occurs, delete the newly created table and try again")
     print(f"\nYour public URL is: {public_url}")

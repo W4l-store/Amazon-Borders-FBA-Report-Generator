@@ -86,7 +86,7 @@ If you've installed Python but it's not recognized by your system:
 
 1. Open Google Docs.
 2. Go to Extensions -> Macros.
-3. Run the macro named `import_csv`.
+3. Run the macro named `import_report`.
 4. Grant necessary permissions, even if you see warning windows.
 5. The macro will access the file through the running server and create a new tab with the report.
 6. If an error occurs, delete the newly created table, restart the server, and try again.
