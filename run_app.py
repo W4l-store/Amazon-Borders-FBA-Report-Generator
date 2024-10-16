@@ -81,7 +81,6 @@ def print_instructions(public_url):
 
 def main():
     check_python()
-    install_requirements()
     if not run_main_script():
         print("Exiting due to main script failure.")
         return

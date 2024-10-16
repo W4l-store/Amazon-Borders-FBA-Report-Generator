@@ -139,7 +139,7 @@ def create_data_frames_from_directories(directory):
         subdirectories = os.listdir(directory)
     except FileNotFoundError:
         print(f"Directory '{directory}' not found.")
-        return data_frames
+        raise FileNotFoundError(f"Directory '{directory}' not found.")
 
     for subdir in subdirectories:
         subdir_path = os.path.join(directory, subdir)
@@ -149,9 +149,11 @@ def create_data_frames_from_directories(directory):
                 if df is not None:
                     data_frames[subdir] = df
             except ValueError as e:
-                print(f"Skipping directory '{subdir_path}': {e}")
+                print(f"Error in directory '{subdir_path}': {e}")
+                raise e
             except Exception as e:
                 print(f"An error occurred while processing directory '{subdir_path}': {e}")
+                raise e
 
     return data_frames
 
@@ -380,10 +382,10 @@ def main():
         template_df = pd.read_csv(template_file_path)
     except FileNotFoundError:
         print(f"Template file not found at '{template_file_path}'.")
-        exit(1)
+        raise FileNotFoundError(f"Template file not found at '{template_file_path}'.")  
     except Exception as e:
         print(f"Error reading template file: {e}")
-        exit(1)
+        raise  e
 
     # Convert template columns to lower case
     template_df = columns_to_lower_case(template_df)
@@ -433,9 +435,10 @@ def main():
         # Optionally, print all data frame column names for debugging
         print("All data frame column names for debugging:")
         print_data_frame_headers(data_frames)
+        raise e
     except Exception as e:
         print(f"An unexpected error occurred:\n{e}")
-        raise  # Re-raise the exception for further debugging if necessary
+        raise  e # Re-raise the exception for further debugging if necessary
 
 if __name__ == "__main__":
     main()
