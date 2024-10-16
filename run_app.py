@@ -61,7 +61,7 @@ def start_ngrok():
 
     try:
         ngrok.set_auth_token(ngrok_auth_token)
-    except pyngrok.exception.PyngrokNgrokInstallError as e:
+    except ngrok.exception.PyngrokNgrokInstallError as e:
         print("Warning: SSL certificate verification failed. Attempting to bypass...")
         print("This is not recommended for production use as it may pose security risks.")
         os.environ['PYTHONHTTPSVERIFY'] = '0'
