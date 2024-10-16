@@ -1,0 +1,66 @@
+# Ignore all files in the root directory
+/*
+
+# But don't ignore these specific files and directories
+!.gitignore
+!README.md
+!run_app.py
+!main.py
+!RUN.bat
+!run_server.bat
+
+# Don't ignore the 'data' directory, but ignore its contents
+!/data/
+/data/*
+# Except for these files
+!/data/template.csv
+!/data/config.csv
+
+/amazon exports/*
+
+# But keep the directory structure
+!/amazon exports/
+!/amazon exports/*/
+!/amazon exports/*/*/
+!/amazon exports/*/*/*/
+
+# Optionally, you can add a .gitkeep file to each directory you want to keep
+!/amazon exports/*/.gitkeep
+!/amazon exports/*/*/.gitkeep
+!/amazon exports/*/*/*/.gitkeep
+
+# Ignore all files in subdirectories
+/amazon exports/*/*
+/amazon exports/*/*/*
+/amazon exports/*/*/*/*
+
+
+
+# Don't ignore the 'results' directory, but ignore its contents
+!/results/
+/results/*
+
+# Python-specific ignores
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment variables
+.env
+
+# IDE-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+

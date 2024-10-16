@@ -1,0 +1,19 @@
+const name,column name
+PRICE,price
+SELLER_SKU,seller-sku
+SKU,sku
+AVAILABLE,available
+INBOUND_QUANTITY,inbound-quantity
+UNITS_ORDERED,units ordered
+UNITS_ORDERED_B2B,"units ordered - b2b"
+ASIN,asin
+INV,inv
+INBOUND,inbound
+MERCHANT_SKU,merchant sku
+C30,30
+C60,60
+C90,90
+C12M,12m
+SHP,shp
+MERCHANT_SKU_W,Merchant SKU
+SHIPPED_W,Shipped
