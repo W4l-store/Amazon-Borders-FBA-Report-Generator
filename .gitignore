@@ -7,8 +7,9 @@
 !run_app.py
 !main.py
 !RUN.bat
-!run_server.bat
 !ngrok.exe
+!CLEAN_FOLDERS.bat
+!copy_and_clean.py
 
 # Don't ignore the 'data' directory, but ignore its contents
 !/data/
@@ -56,3 +57,4 @@ pip-delete-this-directory.txt
 .DS_Store
 Thumbs.db
 
+Setup/ngrok.exe
