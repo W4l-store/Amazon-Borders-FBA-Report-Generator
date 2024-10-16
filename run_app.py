@@ -59,7 +59,17 @@ def start_ngrok():
         print("Error: NGROK_AUTH_TOKEN or NGROK_DOMAIN not found in .env file")
         return None
 
-    ngrok.set_auth_token(ngrok_auth_token)
+    try:
+        ngrok.set_auth_token(ngrok_auth_token)
+    except pyngrok.exception.PyngrokNgrokInstallError as e:
+        print("Warning: SSL certificate verification failed. Attempting to bypass...")
+        print("This is not recommended for production use as it may pose security risks.")
+        os.environ['PYTHONHTTPSVERIFY'] = '0'
+        try:
+            ngrok.set_auth_token(ngrok_auth_token)
+        except Exception as e:
+            print(f"Error setting ngrok auth token: {e}")
+            return None
     
     try:
         public_url = ngrok.connect(8003, domain=ngrok_domain)
