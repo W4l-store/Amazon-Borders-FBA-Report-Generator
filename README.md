@@ -4,6 +4,7 @@
 
 1. [Introduction](#introduction)
 2. [Initial Setup](#initial-setup)
+   - [Install Git](#install-git)
    - [Install Python](#install-python)
    - [Install ngrok](#install-ngrok)
    - [Set Up Python Path](#set-up-python-path)
@@ -22,6 +23,11 @@
 The Amazon Borders FBA Report Generator is a tool designed to help Amazon sellers generate comprehensive reports for their FBA (Fulfillment by Amazon) business. This README file provides step-by-step instructions on how to set up and use the tool.
 
 ## Initial Setup
+
+### Install Git
+
+1. Download and install Git from the [official Git website](https://git-scm.com/downloads).
+2. For detailed installation instructions, refer to this [Git Installation Guide](https://github.com/git-guides/install-git).
 
 ### Install Python
 

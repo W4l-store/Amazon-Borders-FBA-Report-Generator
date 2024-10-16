@@ -11,3 +11,8 @@ if %errorlevel% neq 0 (
 
 
 python run_server.bat
+
+:end
+echo.
+echo Press any key to exit...
+pause >nul
