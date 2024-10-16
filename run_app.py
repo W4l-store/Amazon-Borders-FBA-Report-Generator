@@ -36,8 +36,13 @@ def check_python():
 
 def run_main_script():
     print("Generating report...")
-    subprocess.check_call([sys.executable, "main.py"])
-    print("Report generation complete.")
+    try:
+        subprocess.check_call([sys.executable, "main.py"])
+        print("Report generation complete.")
+        return True
+    except subprocess.CalledProcessError:
+        print("Error: Report generation failed.")
+        return False
 
 def start_local_server():
     print("Starting local server...")
@@ -77,7 +82,9 @@ def print_instructions(public_url):
 def main():
     check_python()
     install_requirements()
-    run_main_script()
+    if not run_main_script():
+        print("Exiting due to main script failure.")
+        return
     
     local_server = start_local_server()
 
