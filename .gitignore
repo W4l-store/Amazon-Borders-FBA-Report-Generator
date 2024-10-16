@@ -16,29 +16,20 @@
 !/data/template.csv
 !/data/config.csv
 
-/amazon exports/*
-
-# But keep the directory structure
+# Don't ignore the 'amazon exports' directory and its contents
 !/amazon exports/
-!/amazon exports/*/
-!/amazon exports/*/*/
-!/amazon exports/*/*/*/
 
-# Optionally, you can add a .gitkeep file to each directory you want to keep
-!/amazon exports/*/.gitkeep
-!/amazon exports/*/*/.gitkeep
-!/amazon exports/*/*/*/.gitkeep
-
-# Ignore all files in subdirectories
 /amazon exports/*/*
-/amazon exports/*/*/*
-/amazon exports/*/*/*/*
-
-
+!/amazon exports/*/.gitkeep
 
 # Don't ignore the 'results' directory, but ignore its contents
 !/results/
 /results/*
+!/results/.gitkeep
+
+# Don't ignore the 'setup' directory and its contents
+!/setup/
+!/setup/**
 
 # Python-specific ignores
 *.pyc
