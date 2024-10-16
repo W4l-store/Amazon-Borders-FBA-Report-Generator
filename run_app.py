@@ -1,5 +1,14 @@
-import subprocess
 import sys
+import subprocess
+
+def install_requirements():
+    print("Installing required libraries...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas", "pyngrok", "python-dotenv"])
+    print("Libraries installed successfully.")
+
+install_requirements()
+
+
 import time
 import os
 import signal
@@ -16,10 +25,7 @@ def check_python():
         sys.exit(1)
     print("Python check passed.")
 
-def install_requirements():
-    print("Installing required libraries...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas", "pyngrok", "python-dotenv"])
-    print("Libraries installed successfully.")
+
 
 def run_main_script():
     print("Generating report...")
@@ -28,7 +34,7 @@ def run_main_script():
 
 def start_local_server():
     print("Starting local server...")
-    return subprocess.Popen([sys.executable, "-m", "http.server", "8002"], 
+    return subprocess.Popen([sys.executable, "-m", "http.server", "8003"], 
                             stdout=subprocess.DEVNULL, 
                             stderr=subprocess.DEVNULL)
 
@@ -44,7 +50,7 @@ def start_ngrok():
     ngrok.set_auth_token(ngrok_auth_token)
     
     try:
-        public_url = ngrok.connect(8002, domain=ngrok_domain)
+        public_url = ngrok.connect(8003, domain=ngrok_domain)
         print(f"ngrok tunnel established: {public_url}")
         return public_url
     except Exception as e:
@@ -67,6 +73,7 @@ def main():
     run_main_script()
     
     local_server = start_local_server()
+
     public_url = start_ngrok()
     
     if public_url:
