@@ -75,7 +75,15 @@ If you've installed Python but it's not recognized by your system:
    - "FBA inventory report"
    - "Restock Inventory report"
    - "Sales Report" for the last 30, 60, 90 days, and 12 months
+   - Weekly shipment reports for the last 4 weeks
 3. Place these exported files in folders with corresponding names within the application directory.
+
+3.1.1 Handling Weekly Shipment Reports
+
+- For weekly shipment reports, use the folders named '1_W', '2_W', '3_W', and '4_W'.
+- If multiple shipments occurred in a single week, place all corresponding reports in the same folder.
+- If there was a week without shipments, you can leave the corresponding folder empty. In this case, the respective column in the final report will remain empty.
+- Note that if you accidentally leave any of the '1_W', '2_W', '3_W', or '4_W' folders empty, the program will not throw an error. Instead, it will simply leave the corresponding column empty in the final report.
 
 3.2 Run the Script
 
@@ -86,7 +94,7 @@ If you've installed Python but it's not recognized by your system:
 
 1. Open Google Docs.
 2. Go to Extensions -> Macros.
-3. Run the macro named `import_csv`.
+3. Run the macro named `import_report`.
 4. Grant necessary permissions, even if you see warning windows.
 5. The macro will access the file through the running server and create a new tab with the report.
 6. If an error occurs, delete the newly created table, restart the server, and try again.

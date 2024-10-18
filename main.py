@@ -77,56 +77,71 @@ def columns_to_lower_case(df):
 
 def create_data_frame_from_file(directory):
     """
-    Reads a file from the specified directory and returns a DataFrame.
-    Assumes there is only one file (excluding .gitkeep) in the directory.
+    Reads files from the specified directory and returns a DataFrame.
+    For '1_W', '2_W', '3_W', '4_W' directories, combines multiple files.
     Supports CSV, TXT, and TSV files.
-    Skips initial lines depending on the directory name.
     """
-    # List files in the directory, excluding .gitkeep
+    base_dir_name = os.path.basename(os.path.normpath(directory))
+    is_weekly_data = base_dir_name in ['1_W', '2_W', '3_W', '4_W']
+
     try:
         files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and f != '.gitkeep']
     except FileNotFoundError:
         print(f"Directory '{directory}' not found.")
         return None
 
-    # Check if there is exactly one file (excluding .gitkeep)
     if not files:
-        raise ValueError(f"No valid files found in directory '{directory}'")
-    if len(files) > 1:
-        raise ValueError(f"More than one valid file found in directory '{directory}'")
+        if is_weekly_data:
+            print(f"Folder '{directory}' is empty, column {directory.split('/')[-1]} will be empty in the final report")
+            return pd.DataFrame(columns=[MERCHANT_SKU_W, SHIPPED_W])
+        else:
+            raise ValueError(f"No valid files found in directory '{directory}'")
 
-    file = files[0]
-    file_path = os.path.join(directory, file)
-    file_extension = os.path.splitext(file)[1].lower()
+    if is_weekly_data:
+        combined_df = pd.DataFrame(columns=[MERCHANT_SKU_W, SHIPPED_W])
+        for file in files:
+            file_path = os.path.join(directory, file)
+            df = read_file(file_path, skip_lines=7)
+            if df is not None:
+                df = df[[MERCHANT_SKU_W, SHIPPED_W]]
+                combined_df = pd.concat([combined_df, df], ignore_index=True)
 
-    # Determine if we need to skip lines based on directory name
-    base_dir_name = os.path.basename(os.path.normpath(directory))
-    skip_lines = 7 if base_dir_name in ['1_W', '2_W', '3_W', '4_W'] else 0  # Skip 7 lines to start from the 8th line
+        # Group by MERCHANT_SKU_W and sum SHIPPED_W
+        combined_df = combined_df.groupby(MERCHANT_SKU_W, as_index=False)[SHIPPED_W].sum()
+        return columns_to_lower_case(combined_df)
+    else:
+        if len(files) > 1:
+            raise ValueError(f"More than one valid file found in directory '{directory}'")
+        file_path = os.path.join(directory, files[0])
+        return read_file(file_path)
 
-    # Try to read the file
+def read_file(file_path, skip_lines=0):
+    """
+    Reads a file and returns a DataFrame.
+    """
+    file_extension = os.path.splitext(file_path)[1].lower()
+    
     try:
         if file_extension == '.csv':
-            data_frame = pd.read_csv(file_path, encoding='utf-8', skiprows=skip_lines)
+            df = pd.read_csv(file_path, encoding='utf-8', skiprows=skip_lines)
         elif file_extension in ['.txt', '.tsv']:
-            data_frame = pd.read_csv(file_path, sep='\t', encoding='utf-8', skiprows=skip_lines)
+            df = pd.read_csv(file_path, sep='\t', encoding='utf-8', skiprows=skip_lines)
         else:
-            raise ValueError(f"Unsupported file extension '{file_extension}' in file '{file}'")
+            raise ValueError(f"Unsupported file extension '{file_extension}' in file '{file_path}'")
     except UnicodeDecodeError:
-        # Try with a different encoding
         try:
             if file_extension == '.csv':
-                data_frame = pd.read_csv(file_path, encoding='ISO-8859-1', skiprows=skip_lines)
+                df = pd.read_csv(file_path, encoding='ISO-8859-1', skiprows=skip_lines)
             elif file_extension in ['.txt', '.tsv']:
-                data_frame = pd.read_csv(file_path, sep='\t', encoding='ISO-8859-1', skiprows=skip_lines)
+                df = pd.read_csv(file_path, sep='\t', encoding='ISO-8859-1', skiprows=skip_lines)
         except Exception as e:
-            print(f"Failed to read file '{file}' in directory '{directory}': {e}")
-            raise e
+            print(f"Failed to read file '{file_path}': {e}")
+            return None
     except Exception as e:
-        print(f"Failed to read file '{file}' in directory '{directory}': {e}")
-        raise e
+        print(f"Failed to read file '{file_path}': {e}")
+        return None
 
-    # Convert columns to lower case
-    return columns_to_lower_case(data_frame)
+    return columns_to_lower_case(df)
 
 def create_data_frames_from_directories(directory):
     """
