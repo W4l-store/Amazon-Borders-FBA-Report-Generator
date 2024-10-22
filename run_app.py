@@ -1,3 +1,4 @@
+import shutil
 import sys
 import subprocess
 import ssl
@@ -94,8 +95,19 @@ def print_instructions(public_url):
     print(f"\nYour public URL is: {public_url}")
     print("\nPress Enter to stop the server when you're done...")
 
+def copy_env_to_setup_folder():
+    #.env copy to ./Setup
+    shutil.copy('.env', './Setup/.env')
+    
+
 def main():
     check_python()
+
+    #if .env not in Setup folder 
+    if not os.path.exists('./Setup/.env'):
+        copy_env_to_setup_folder()
+        print('Copied .env to ./Setup folder')
+    
     if not run_main_script():
         print("Exiting due to main script failure.")
         return
