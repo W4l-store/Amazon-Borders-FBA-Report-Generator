@@ -2,6 +2,8 @@ import shutil
 import sys
 import subprocess
 import ssl
+import os
+
 def install_requirements():
     print("Installing required libraries...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", 
@@ -17,14 +19,12 @@ def install_requirements():
 
 try:
     import time
-    import os
     import signal
     from dotenv import load_dotenv
     from pyngrok import ngrok
 except :
     install_requirements()
     import time
-    import os
     import signal
     from dotenv import load_dotenv
     from pyngrok import ngrok
@@ -96,9 +96,11 @@ def print_instructions(public_url):
     print("\nPress Enter to stop the server when you're done...")
 
 def copy_env_to_setup_folder():
-    #.env copy to ./Setup
+    # Create Setup AMAZON BORDERS FBA REPORT directory if it doesn't exist
+    os.makedirs('./Setup AMAZON BORDERS FBA REPORT', exist_ok=True)
+    # Copy .env to ./Setup AMAZON BORDERS FBA REPORT
     shutil.copy('.env', './Setup AMAZON BORDERS FBA REPORT/.env')
-    
+    print('Copied .env to ./Setup AMAZON BORDERS FBA REPORT folder')
 
 def main():
     check_python()
@@ -106,7 +108,6 @@ def main():
     #if .env not in Setup folder 
     if not os.path.exists('./Setup AMAZON BORDERS FBA REPORT/.env'):
         copy_env_to_setup_folder()
-        print('Copied .env to ./Setup AMAZON BORDERS FBA REPORT folder')
     
     if not run_main_script():
         print("Exiting due to main script failure.")
