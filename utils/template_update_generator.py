@@ -61,7 +61,7 @@ def create_new_template_csv(all_listings_report):
     Create a new template CSV file based on the all listings report.
     """
     # Define the initial columns for the template
-    initial_columns = ['id', 'Title', 'ASIN', 'SHP', 'N_Price', 'Price', '1_W', '2_W', '3_W', '4_W', 'Inbound', 'Inv', '30', '60', '90', '12m', '2000-2025', 'Parts__Num', 'SKU']
+    initial_columns = ['id', 'Title', 'ASIN', 'SHP', 'N_Price', 'Price', '1_W', '2_W', '3_W', '4_W', 'Inbound', 'Inv', '30', '60', '90', '12m', '2000-2025', 'Parts__Num', 'SKU', 'Status']
     
     # Create a new DataFrame with the initial columns
     new_template_df = pd.DataFrame(columns=initial_columns)
@@ -70,7 +70,7 @@ def create_new_template_csv(all_listings_report):
     borders_listings = get_borders_listings_from_all_listings_report(all_listings_report)
     
     # Fill new_template_df with data from borders_listings only for the required columns
-    for col in ['Title', 'ASIN', 'Parts__Num', 'SKU']:
+    for col in ['Title', 'ASIN', 'Parts__Num', 'SKU', 'Status']:
         if col in borders_listings.columns:
             new_template_df[col] = borders_listings[col]
     
@@ -100,13 +100,13 @@ def get_borders_listings_from_all_listings_report(all_listings_report_df):
 
     # Filter the FBA inventory report
     filtered_df = all_listings_report_df[all_listings_report_df[seller_sku_col].isin(amazon_sku_to_B_sku.keys())].copy()
-    filtered_df = filtered_df[filtered_df[status_col] == 'Active'].copy()
+    # filtered_df = filtered_df[filtered_df[status_col] == 'Active'].copy()
 
     # Fill Parts__Num column with the B_SKU
     filtered_df.loc[:, 'Parts__Num'] = filtered_df[seller_sku_col].map(amazon_sku_to_B_sku)
     
     # Rename columns to match the template
-    filtered_df = filtered_df.rename(columns={title_col: 'Title', asin_col: 'ASIN', seller_sku_col: 'SKU'})
+    filtered_df = filtered_df.rename(columns={title_col: 'Title', asin_col: 'ASIN', seller_sku_col: 'SKU', status_col: 'Status'})
     
     # Sort A to Z by title
     filtered_df = filtered_df.sort_values(by='Title', ascending=True).copy()
