@@ -38,8 +38,8 @@
 !/results/.gitkeep
 
 # Don't ignore the 'setup' directory and its contents
-!/setup/
-!/setup/**
+!/Setup AMAZON BORDERS FBA REPORT /
+!/Setup AMAZON BORDERS FBA REPORT /**
 
 # Python-specific ignores
 *.pyc
