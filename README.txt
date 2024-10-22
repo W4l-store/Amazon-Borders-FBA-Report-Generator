@@ -16,6 +16,7 @@ Table of Contents
 4. Configuration File Usage
 5. Folder Cleaning Function
 6. Troubleshooting
+7. Template Update and SKU Mapping
 
 1. INTRODUCTION
 
@@ -105,7 +106,14 @@ If you've installed Python but it's not recognized by your system:
 1. When the macro execution is complete, press any key in the terminal to close the server.
 2. Do not close the terminal using the close button, as it's essential to properly terminate the server execution.
 
-4. CONFIGURATION FILE USAGE
+4. FOLDER CLEANING FUNCTION
+
+This function is designed to eliminate the need for manual deletion of files in the Amazon exports folder before uploading new files, and to keep historical reports in the Reports history folder.
+
+To run the function:
+1. Execute the `CLEAN_FOLDERS.bat` file.
+
+5. CONFIGURATION FILE USAGE
 
 The script uses a configuration file (`Config.csv`) to manage the names of columns in the exported Amazon files. This ensures the script remains functional even if Amazon changes the names of the export columns.
 
@@ -123,13 +131,11 @@ Handling Errors Related to Column Names:
    c. Replace the old column name with the new one from the export file.
    d. Save the changes to `Config.csv` and rerun the script.
 
-5. FOLDER CLEANING FUNCTION
-
-This function is designed to eliminate the need for manual deletion of files in the Amazon exports folder before uploading new files, and to keep historical reports in the Reports history folder.
-
-To run the function:
-1. Execute the `CLEAN_FOLDERS.bat` file.
-
 6. TROUBLESHOOTING
 
 If you encounter any issues not covered by this guide, please contact the script creator for further assistance.
+
+7. TEMPLATE UPDATE AND SKU MAPPING
+
+7.1 Automatic Template Update
+The template file is automatically updated each time the script runs, based on the

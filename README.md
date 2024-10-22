@@ -139,3 +139,35 @@ The script uses a configuration file (`Config.csv`) to manage the names of colum
 ## Troubleshooting
 
 If you encounter any issues not covered by this guide, please contact the script creator for further assistance.
+
+## Template Update and SKU Mapping
+
+### Automatic Template Update
+
+The template file is automatically updated each time the script runs, based on the "All listings report". This ensures that the template always reflects the most current listing data.
+
+### SKU Mapping Data
+
+When the script is executed, it downloads the latest SKU mapping information from Google Sheets. This mapping data is crucial for identifying which listings are borders and which are not.
+
+### Border Identification
+
+The script determines whether a listing is a border based on its mapping status. Listings with a mapping are considered borders, while those without are not.
+
+### Potential Unmapped Borders
+
+The script identifies potential unmapped borders using the following criteria:
+
+1. Listings that do not have a mapping for borders
+2. Listings that do not have a mapping for the Blue system
+3. Listings that either:
+   a. Contain the word "border" in the title (case-insensitive), or
+   b. Have a price between $17 and $20
+
+These potentially unmapped borders are saved in a separate report for review. To ensure accurate categorization:
+
+1. Check the report located at `results/potential_not_mapped_borders.csv`
+2. Review the listings in this report
+3. Update the mapping information for these listings in the corresponding Google Sheets document
+
+Keeping the mapping information up-to-date is crucial for accurate report generation.
