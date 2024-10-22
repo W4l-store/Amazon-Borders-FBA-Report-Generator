@@ -91,7 +91,7 @@ def get_borders_listings_from_all_listings_report(all_listings_report_df):
     
     # Get the column names from config
     seller_sku_col = config.get('SELLER_SKU', 'seller-sku').lower()
-    asin_col = config.get('ASIN', 'asin').lower()
+    asin_col = config.get('ASIN1', 'asin1').lower()
     title_col = config.get('ITEM_NAME', 'item-name').lower()
     status_col = config.get('STATUS', 'status').lower()
 
