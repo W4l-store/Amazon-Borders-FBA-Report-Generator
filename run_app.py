@@ -97,16 +97,16 @@ def print_instructions(public_url):
 
 def copy_env_to_setup_folder():
     #.env copy to ./Setup
-    shutil.copy('.env', './Setup/.env')
+    shutil.copy('.env', './Setup AMAZON BORDERS FBA REPORT/.env')
     
 
 def main():
     check_python()
 
     #if .env not in Setup folder 
-    if not os.path.exists('./Setup/.env'):
+    if not os.path.exists('./Setup AMAZON BORDERS FBA REPORT/.env'):
         copy_env_to_setup_folder()
-        print('Copied .env to ./Setup folder')
+        print('Copied .env to ./Setup AMAZON BORDERS FBA REPORT folder')
     
     if not run_main_script():
         print("Exiting due to main script failure.")
