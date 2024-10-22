@@ -3,7 +3,14 @@ import subprocess
 import ssl
 def install_requirements():
     print("Installing required libraries...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas", "pyngrok", "python-dotenv"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", 
+                           "pandas", 
+                           "pyngrok", 
+                           "python-dotenv",
+                           "google-auth",
+                           "google-auth-oauthlib",
+                           "google-api-python-client",
+                           "gspread"])
     print("Libraries installed successfully.")
 
 

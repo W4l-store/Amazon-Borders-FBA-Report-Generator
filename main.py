@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from utils.template_update_generator import preper_new_template_csv
 
 # Read constants from 'config.csv' and map 'const name' to 'column name'
 config_file_path = './data/config.csv'
@@ -391,6 +392,12 @@ def main():
     # Create data frames from directories
     data_frames = create_data_frames_from_directories('amazon exports')
 
+    try:
+        preper_new_template_csv(data_frames['all_listings_report'])
+    except Exception as e:
+        print(f'error in preper_new_template_csv {e}')
+        raise e     
+
     # Check if 'template.csv' exists
     template_file_path = './data/template.csv'
     try:
@@ -406,9 +413,7 @@ def main():
     template_df = columns_to_lower_case(template_df)
 
     try:
-        # Pre-clean the template DataFrame
-        template_df = pre_clean(template_df)
-
+        print('Processing reports data')
         # Update template with price data
         if 'all_listings_report' in data_frames:
             template_df = update_template_with_price_data(template_df, data_frames['all_listings_report'])
@@ -443,7 +448,7 @@ def main():
         output_file_path = './results/result.csv'
         os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
         template_df.to_csv(output_file_path, index=False)
-        print(f"Program finished, results saved to '{output_file_path}'")
+        print(f"Data processing completed, results saved to '{output_file_path}'")
 
     except KeyError as e:
         print(f"Error with column name:\n{e}.\n\nPlease check your './data/config.csv' for this constant name.\n")

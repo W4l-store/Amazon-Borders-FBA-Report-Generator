@@ -16,14 +16,21 @@
 !/data/
 /data/*
 # Except for these files
-!/data/template.csv
 !/data/config.csv
-
+!/template_update_generator.py
 # Don't ignore the 'amazon exports' directory and its contents
 !/amazon exports/
 
 /amazon exports/*/*
 !/amazon exports/*/.gitkeep
+
+#Don't ignore the 'data/amazon' directory 
+!/data/amazon/
+/data/amazon/*
+!/data/amazon/.gitkeep
+#Don't ignore the 'utils' directory and its contents
+!/utils/
+!/utils/**
 
 # Don't ignore the 'results' directory, but ignore its contents
 !/results/
@@ -59,3 +66,4 @@ pip-delete-this-directory.txt
 Thumbs.db
 
 Setup/ngrok.exe
+/data/template.csv
