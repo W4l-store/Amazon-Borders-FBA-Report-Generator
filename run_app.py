@@ -4,6 +4,7 @@ import subprocess
 import ssl
 import os
 
+
 def install_requirements():
     print("Installing required libraries...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", 
@@ -18,16 +19,25 @@ def install_requirements():
 
 
 try:
-    import time
-    import signal
+  # try to import the libraries from install_requirements()
+    import pandas as pd
+    import pyngrok
     from dotenv import load_dotenv
     from pyngrok import ngrok
+    import os
+    import google.auth
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from googleapiclient.discovery import build
+    import gspread
+
 except :
     install_requirements()
     import time
-    import signal
     from dotenv import load_dotenv
     from pyngrok import ngrok
+
 
 
 # Load environment variables
