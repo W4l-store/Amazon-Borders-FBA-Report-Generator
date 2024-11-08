@@ -65,7 +65,7 @@ function import_report() {
     { col: 14, width: 70 }, // 60
     { col: 15, width: 70 }, // 90
     { col: 16, width: 70 }, // 12m
-    { col: 17, width: 5 }, // 2000-2025
+    { col: 17, width: 70 }, // 2yr
     { col: 18, width: 120 }, // parts__num
     { col: 19, width: 120 }, // sku
   ];

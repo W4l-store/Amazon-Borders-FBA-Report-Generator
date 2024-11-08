@@ -61,7 +61,7 @@ def create_new_template_csv(all_listings_report):
     Create a new template CSV file based on the all listings report.
     """
     # Define the initial columns for the template
-    initial_columns = ['id', 'Title', 'ASIN', 'SHP', 'N_Price', 'Price', '1_W', '2_W', '3_W', '4_W', 'Inbound', 'Inv', '30', '60', '90', '12m', '2000-2025', 'Parts__Num', 'SKU', 'Status']
+    initial_columns = ['id', 'Title', 'ASIN', 'SHP', 'N_Price', 'Price', '1_W', '2_W', '3_W', '4_W', 'Inbound', 'Inv', '30', '60', '90', '12m', '2yr', 'Parts__Num', 'SKU', 'Status']
     
     # Create a new DataFrame with the initial columns
     new_template_df = pd.DataFrame(columns=initial_columns)

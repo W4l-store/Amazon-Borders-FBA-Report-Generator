@@ -31,9 +31,11 @@ required_constants = {
     'C60',
     'C90',
     'C12M',
+    'C2YR',
     'SHP',
     'MERCHANT_SKU_W',
     'SHIPPED_W'
+
 }
 
 # Initialize constants from config, converting to lower case
@@ -65,6 +67,7 @@ C30 = constants['C30']
 C60 = constants['C60']
 C90 = constants['C90']
 C12M = constants['C12M']
+C2YR = constants['C2YR']
 SHP = constants['SHP']
 MERCHANT_SKU_W = constants['MERCHANT_SKU_W']
 SHIPPED_W = constants['SHIPPED_W']
@@ -310,7 +313,7 @@ def sales_to_dict(sales_report_df):
 
     return sales_data
 
-def update_template_with_sales_data(template_df, df_30, df_60, df_90, df_12_m):
+def update_template_with_sales_data(template_df, df_30, df_60, df_90, df_12_m, df_2yr):
     """
     Updates the template DataFrame with sales data for 30, 60, 90 days, and 12 months.
     """
@@ -319,13 +322,15 @@ def update_template_with_sales_data(template_df, df_30, df_60, df_90, df_12_m):
     sales_60 = sales_to_dict(df_60)
     sales_90 = sales_to_dict(df_90)
     sales_12_m = sales_to_dict(df_12_m)
+    sales_2yr = sales_to_dict(df_2yr)
 
     # Update the template DataFrame
     template_df[C30] = template_df[SKU].map(sales_30).fillna(0)
     template_df[C60] = template_df[SKU].map(sales_60).fillna(0)
     template_df[C90] = template_df[SKU].map(sales_90).fillna(0)
     template_df[C12M] = template_df[SKU].map(sales_12_m).fillna(0)
-
+    template_df[C2YR] = template_df[SKU].map(sales_2yr).fillna(0)
+    
     return template_df
 
 def pre_clean(template_df):
@@ -433,10 +438,10 @@ def main():
             print("Data frames for 'FBA_Inventory' or 'restock_report' not found.")
 
         # Update template with sales data
-        if all(key in data_frames for key in ['30d', '60d', '90d', '12m']):
-            template_df = update_template_with_sales_data(template_df, data_frames['30d'], data_frames['60d'], data_frames['90d'], data_frames['12m'])
+        if all(key in data_frames for key in ['30d', '60d', '90d', '12m', '2yr']):
+            template_df = update_template_with_sales_data(template_df, data_frames['30d'], data_frames['60d'], data_frames['90d'], data_frames['12m'], data_frames['2yr'])
         else:
-            print("One or more sales data frames ('30d', '60d', '90d', '12m') not found.")
+            print("One or more sales data frames ('30d', '60d', '90d', '12m', '2yr') not found.")
 
         # Update template with last shipments data
         if all(key in data_frames for key in ['1_W', '2_W', '3_W', '4_W']):
