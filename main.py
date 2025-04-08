@@ -89,7 +89,7 @@ def create_data_frame_from_file(directory):
     is_weekly_data = base_dir_name in ['1_W', '2_W', '3_W', '4_W']
 
     try:
-        files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and f != '.gitkeep']
+        files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and f != '.gitkeep' and f != '.DS_Store']
     except FileNotFoundError:
         print(f"Directory '{directory}' not found.")
         return None

@@ -86,6 +86,7 @@ def create_new_template_csv(all_listings_report):
 def get_borders_listings_from_all_listings_report(all_listings_report_df):
     """
     Filter and process the all listings report to get borders listings.
+    This function includes both mapped borders and listings with 'Border' in the title.
     """
     config = read_config()
     
@@ -94,22 +95,40 @@ def get_borders_listings_from_all_listings_report(all_listings_report_df):
     asin_col = config.get('ASIN1', 'asin1').lower()
     title_col = config.get('ITEM_NAME', 'item-name').lower()
     status_col = config.get('STATUS', 'status').lower()
+    fulfillment_col = config.get('FULFILLMENT_CHANNEL', 'fulfillment-channel').lower()
 
     # Get the B_SKU mapping
     amazon_sku_to_B_sku = retrieve_B_sku_mapping()
 
-    # Filter the FBA inventory report
-    filtered_df = all_listings_report_df[all_listings_report_df[seller_sku_col].isin(amazon_sku_to_B_sku.keys())].copy()
-    # filtered_df = filtered_df[filtered_df[status_col] == 'Active'].copy()
-
-    # Fill Parts__Num column with the B_SKU
+    # Filter the inventory report to include:
+    # 1. Items that are in the B_SKU mapping
+    mapped_borders = all_listings_report_df[all_listings_report_df[seller_sku_col].isin(amazon_sku_to_B_sku.keys())].copy()
+    
+    # 2. Items that have 'Border' in the title and are fulfilled by Amazon
+    title_borders = all_listings_report_df[
+        (all_listings_report_df[title_col].str.contains('Border', case=False, na=False)) &
+        (all_listings_report_df[fulfillment_col] == 'AMAZON_NA') &
+        (~all_listings_report_df[seller_sku_col].isin(amazon_sku_to_B_sku.keys()))
+    ].copy()
+    
+    # Combine both sets of borders
+    filtered_df = pd.concat([mapped_borders, title_borders], ignore_index=True)
+    
+    # Fill Parts__Num column with the B_SKU for mapped items
     filtered_df.loc[:, 'Parts__Num'] = filtered_df[seller_sku_col].map(amazon_sku_to_B_sku)
+    
+    # For borders identified by title (not in mapping), set Parts__Num to "UNMAPPED_BORDER"
+    mask = filtered_df['Parts__Num'].isna()
+    filtered_df.loc[mask, 'Parts__Num'] = "UNMAPPED_BORDER"
     
     # Rename columns to match the template
     filtered_df = filtered_df.rename(columns={title_col: 'Title', asin_col: 'ASIN', seller_sku_col: 'SKU', status_col: 'Status'})
     
     # Sort A to Z by title
     filtered_df = filtered_df.sort_values(by='Title', ascending=True).copy()
+    
+    # Remove duplicates if any
+    filtered_df = filtered_df.drop_duplicates(subset=['SKU'], keep='first')
     
     return filtered_df
 
@@ -131,7 +150,7 @@ def get_potential_not_mapped_borders(all_listings_report_df):
     filtered_df = all_listings_report_df[
         (
             all_listings_report_df[title_col].str.contains('Border', case=False, na=False) |
-            (all_listings_report_df[price_col].astype(float).between(17, 20))
+            (all_listings_report_df[price_col].astype(float).between(6, 20))
         ) &
         (all_listings_report_df[fulfillment_col] == 'AMAZON_NA') &
         (~all_listings_report_df[seller_sku_col].isin(amazon_sku_to_BS_sku.keys())) &
