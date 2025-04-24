@@ -21,3 +21,7 @@ SHIPPED_W,Shipped
 ITEM_NAME,item-name
 STATUS,status
 ASIN1,asin1
+FBA_SKU,fba_sku
+M_SKU,m_sku
+M_30,m_30
+M_12M,m_12m

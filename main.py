@@ -34,8 +34,11 @@ required_constants = {
     'C2YR',
     'SHP',
     'MERCHANT_SKU_W',
-    'SHIPPED_W'
-
+    'SHIPPED_W',
+    'FBA_SKU',
+    'M_SKU',
+    'M_30',
+    'M_12M'
 }
 
 # Initialize constants from config, converting to lower case
@@ -71,6 +74,10 @@ C2YR = constants['C2YR']
 SHP = constants['SHP']
 MERCHANT_SKU_W = constants['MERCHANT_SKU_W']
 SHIPPED_W = constants['SHIPPED_W']
+FBA_SKU = constants['FBA_SKU']
+M_SKU = constants['M_SKU']
+M_30 = constants['M_30']
+M_12M = constants['M_12M']
 
 def columns_to_lower_case(df):
     """
@@ -184,17 +191,17 @@ def update_template_with_price_data(template_df, all_listings_report_df):
     if SELLER_SKU not in all_listings_report_df.columns or PRICE not in all_listings_report_df.columns:
         raise KeyError(f"Required columns '{SELLER_SKU}' or '{PRICE}' not found in 'all_listings_report_df'.")
 
-    if SKU not in template_df.columns:
-        raise KeyError(f"Column '{SKU}' not found in 'template_df'.")
+    if FBA_SKU not in template_df.columns:
+        raise KeyError(f"Column '{FBA_SKU}' not found in 'template_df'.")
 
     # Create a mapping from SELLER_SKU to PRICE
     price_map = all_listings_report_df.set_index(SELLER_SKU)[PRICE].to_dict()
 
     # Update the PRICE column in template_df using the mapping
-    template_df[PRICE] = template_df[SKU].map(price_map)
+    template_df[PRICE] = template_df[FBA_SKU].map(price_map)
 
     # Optional: Print SKUs that were not found in the price_map
-    missing_skus = template_df[template_df[PRICE].isnull()][SKU].unique()
+    missing_skus = template_df[template_df[PRICE].isnull()][FBA_SKU].unique()
     if len(missing_skus) > 0:
         print(f"SKUs not found in all_listings_report: {missing_skus}")
 
@@ -207,7 +214,7 @@ def update_template_with_availability_data(template_df, FBA_inventory_report_df,
     # Check if required columns exist in the data frames
     required_columns_fba = [SKU, AVAILABLE]
     required_columns_restock = [MERCHANT_SKU, AVAILABLE]
-    required_columns_template = [SKU]
+    required_columns_template = [FBA_SKU]
 
     for col in required_columns_fba:
         if col not in FBA_inventory_report_df.columns:
@@ -234,7 +241,7 @@ def update_template_with_availability_data(template_df, FBA_inventory_report_df,
         else:
             return 0
 
-    template_df[INV] = template_df[SKU].apply(get_inventory)
+    template_df[INV] = template_df[FBA_SKU].apply(get_inventory)
 
     return template_df
 
@@ -254,7 +261,7 @@ def update_template_with_inbound_quantity_data(template_df, FBA_inventory_report
     # Check if required columns exist
     required_columns_fba = [SKU, INBOUND_QUANTITY]
     required_columns_restock = [MERCHANT_SKU, INBOUND]
-    required_columns_template = [SKU]
+    required_columns_template = [FBA_SKU]
 
     for col in required_columns_fba:
         if col not in FBA_inventory_report_df.columns:
@@ -281,7 +288,7 @@ def update_template_with_inbound_quantity_data(template_df, FBA_inventory_report
         else:
             return 0
 
-    template_df[INBOUND] = template_df[SKU].apply(get_inbound_quantity)
+    template_df[INBOUND] = template_df[FBA_SKU].apply(get_inbound_quantity)
 
     return template_df
 
@@ -325,11 +332,11 @@ def update_template_with_sales_data(template_df, df_30, df_60, df_90, df_12_m, d
     sales_2yr = sales_to_dict(df_2yr)
 
     # Update the template DataFrame
-    template_df[C30] = template_df[SKU].map(sales_30).fillna(0)
-    template_df[C60] = template_df[SKU].map(sales_60).fillna(0)
-    template_df[C90] = template_df[SKU].map(sales_90).fillna(0)
-    template_df[C12M] = template_df[SKU].map(sales_12_m).fillna(0)
-    template_df[C2YR] = template_df[SKU].map(sales_2yr).fillna(0)
+    template_df[C30] = template_df[FBA_SKU].map(sales_30).fillna(0)
+    template_df[C60] = template_df[FBA_SKU].map(sales_60).fillna(0)
+    template_df[C90] = template_df[FBA_SKU].map(sales_90).fillna(0)
+    template_df[C12M] = template_df[FBA_SKU].map(sales_12_m).fillna(0)
+    template_df[C2YR] = template_df[FBA_SKU].map(sales_2yr).fillna(0)
     
     return template_df
 
@@ -344,7 +351,7 @@ def pre_clean(template_df):
         raise KeyError(f"Column '{ASIN}' not found in 'template_df'.")
 
     # Clear the columns that will be updated
-    columns_to_clear = [PRICE, INV, INBOUND, C30, C60, C90, C12M, SHP, '1_w', '2_w', '3_w', '4_w']
+    columns_to_clear = [PRICE, INV, INBOUND, C30, C60, C90, C12M, SHP, '1_w', '2_w', '3_w', '4_w', M_30, M_12M]
     for col in columns_to_clear:
         if col in template_df.columns:
             template_df[col] = ''
@@ -381,10 +388,10 @@ def update_template_with_last_shipments_data(template_df, df_1_W, df_2_W, df_3_W
     last_shipped_map_4_w = df_4_W.set_index(MERCHANT_SKU_W)[SHIPPED_W].to_dict()
 
     # Update the template DataFrame
-    template_df['1_w'] = template_df[SKU].map(last_shipped_map_1_w).fillna('')
-    template_df['2_w'] = template_df[SKU].map(last_shipped_map_2_w).fillna('')
-    template_df['3_w'] = template_df[SKU].map(last_shipped_map_3_w).fillna('')
-    template_df['4_w'] = template_df[SKU].map(last_shipped_map_4_w).fillna('')
+    template_df['1_w'] = template_df[FBA_SKU].map(last_shipped_map_1_w).fillna('')
+    template_df['2_w'] = template_df[FBA_SKU].map(last_shipped_map_2_w).fillna('')
+    template_df['3_w'] = template_df[FBA_SKU].map(last_shipped_map_3_w).fillna('')
+    template_df['4_w'] = template_df[FBA_SKU].map(last_shipped_map_4_w).fillna('')
 
     return template_df
 
@@ -398,7 +405,7 @@ def main():
     data_frames = create_data_frames_from_directories('amazon exports')
 
     try:
-        preper_new_template_csv(data_frames['all_listings_report'])
+        preper_new_template_csv(data_frames['all_listings_report'], data_frames['FBA_Inventory'])
     except Exception as e:
         print(f'error in preper_new_template_csv {e}')
         raise e     
