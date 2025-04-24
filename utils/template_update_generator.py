@@ -1,15 +1,18 @@
 import pandas as pd
 from utils.helpers import a_ph, retrieve_B_sku_mapping, retrieve_BS_sku_mapping
 from utils.update_resources import update_resources
+from utils.fba_merchant_mapping import create_fba_merchant_mapping
+from utils.listing_classifier import classify_listings
 
 
-def preper_new_template_csv(all_listings_report):
+def preper_new_template_csv(all_listings_report, fba_inventory_report):
     """
     Prepare a new template CSV file based on the all listings report.
     This function updates SKU mappings, creates a new template, and identifies potential unmapped borders.
     
     Args:
         all_listings_report (pd.DataFrame): The all listings report data.
+        fba_inventory_report (pd.DataFrame): The FBA inventory report data.
     
     Raises:
         Exception: If any step in the process fails.
@@ -27,7 +30,7 @@ def preper_new_template_csv(all_listings_report):
     # Step 2: Create new template CSV
     try:
         print("Creating new template CSV")
-        create_new_template_csv(all_listings_report)
+        create_new_template_csv(all_listings_report, fba_inventory_report)
         print("New template CSV successfully created")
     except Exception as e:
         print(f"Error creating new template CSV: {e}")
@@ -56,37 +59,104 @@ def preper_new_template_csv(all_listings_report):
     print("New template CSV preparation completed successfully")
 
 
-def create_new_template_csv(all_listings_report):
+def create_new_template_csv(all_listings_report, fba_inventory_report):
     """
-    Create a new template CSV file based on the all listings report.
+    Create a new template CSV file based on the all listings report and FBA inventory report.
+    
+    Args:
+        all_listings_report (pd.DataFrame): The all listings report data.
+        fba_inventory_report (pd.DataFrame): The FBA inventory report data.
     """
     # Define the initial columns for the template
-    initial_columns = ['id', 'Title', 'ASIN', 'SHP', 'N_Price', 'Price', '1_W', '2_W', '3_W', '4_W', 'Inbound', 'Inv', '30', '60', '90', '12m', '2yr', 'Parts__Num', 'SKU', 'Status']
+    initial_columns = ['id', 'Title', 'ASIN', 'SHP', 'N_Price', 'Price', '1_W', '2_W', '3_W', '4_W', 'Inbound', 'Inv', '30', '60', '90', '12m', '2yr', 'M_30', 'M_12m', 'Parts__Num', 'FBA_SKU', 'M_SKU', 'Status']
     
     # Create a new DataFrame with the initial columns
     new_template_df = pd.DataFrame(columns=initial_columns)
     
-    # Get the borders listings
+    # Get all borders listings without filtering by fulfillment channel
     borders_listings = get_borders_listings_from_all_listings_report(all_listings_report)
     
-    # Fill new_template_df with data from borders_listings only for the required columns
-    for col in ['Title', 'ASIN', 'Parts__Num', 'SKU', 'Status']:
-        if col in borders_listings.columns:
-            new_template_df[col] = borders_listings[col]
+    # Classify listings as FBA or Merchant
+    classification = classify_listings(all_listings_report, fba_inventory_report)
+    fba_skus = classification['fba_skus']
+    merchant_skus = classification['merchant_skus']
     
-    # Fill the id column with sequential numbers
-    new_template_df['id'] = range(1, len(new_template_df) + 1)
+    # Create FBA to Merchant SKU mapping
+    fba_merchant_mapping = create_fba_merchant_mapping(all_listings_report, fba_inventory_report)
+    
+    # PART 1: Add FBA listings to template
+    fba_template = add_fba_listings_to_template(borders_listings, fba_skus, fba_merchant_mapping, initial_columns)
+    
+    # PART 2: Add standalone FBM listings to template (placeholder for now)
+    # This will be implemented later
+    final_template = add_fbm_listings_to_template(borders_listings, merchant_skus, fba_template)
     
     # Save the updated template to a CSV file
-    new_template_df.to_csv(a_ph('/data/template.csv'), index=False)
+    final_template.to_csv(a_ph('/data/template.csv'), index=False)
 
 
+def add_fba_listings_to_template(borders_listings, fba_skus, fba_merchant_mapping, initial_columns):
+    """
+    Add FBA listings to the template.
+    
+    Args:
+        borders_listings (pd.DataFrame): The borders listings data.
+        fba_skus (set): Set of SKUs classified as FBA.
+        fba_merchant_mapping (dict): Mapping of FBA SKUs to Merchant SKUs.
+        initial_columns (list): List of columns for the template.
+        
+    Returns:
+        pd.DataFrame: Template with FBA listings added.
+    """
+    # Create a new DataFrame with the initial columns
+    fba_template = pd.DataFrame(columns=initial_columns)
+    
+    # Filter borders_listings to only include FBA SKUs
+    if 'SKU' in borders_listings.columns:
+        fba_borders = borders_listings[borders_listings['SKU'].isin(fba_skus)].copy()
+        
+        # Fill fba_template with data from fba_borders for the required columns
+        for col in ['Title', 'ASIN', 'Parts__Num', 'Status']:
+            if col in fba_borders.columns:
+                fba_template[col] = fba_borders[col]
+        
+        # Map the SKU column to FBA_SKU
+        fba_template['FBA_SKU'] = fba_borders['SKU']
+        
+        # Add M_SKU column with merchant SKUs from the mapping
+        fba_template['M_SKU'] = fba_template['FBA_SKU'].apply(
+            lambda fba_sku: ', '.join(fba_merchant_mapping.get(fba_sku, [])) if fba_sku in fba_merchant_mapping else ''
+        )
+    
+    # Fill the id column with sequential numbers
+    fba_template['id'] = range(1, len(fba_template) + 1)
+    
+    return fba_template
+
+
+def add_fbm_listings_to_template(borders_listings, merchant_skus, fba_template):
+    """
+    Add standalone FBM (Merchant) listings to the template.
+    This function will be implemented in the future.
+    
+    Args:
+        borders_listings (pd.DataFrame): The borders listings data.
+        merchant_skus (set): Set of SKUs classified as Merchant.
+        fba_template (pd.DataFrame): Template with FBA listings already added.
+        
+    Returns:
+        pd.DataFrame: Final template with both FBA and FBM listings.
+    """
+    # For now, just return the FBA template without changes
+    # This placeholder will be expanded in the future to add standalone FBM listings
+    return fba_template
 
 
 def get_borders_listings_from_all_listings_report(all_listings_report_df):
     """
     Filter and process the all listings report to get borders listings.
-    This function includes both mapped borders and listings with 'Border' in the title.
+    This function includes both mapped borders and listings with 'Border' in the title,
+    without filtering by fulfillment channel.
     """
     config = read_config()
     
@@ -95,7 +165,6 @@ def get_borders_listings_from_all_listings_report(all_listings_report_df):
     asin_col = config.get('ASIN1', 'asin1').lower()
     title_col = config.get('ITEM_NAME', 'item-name').lower()
     status_col = config.get('STATUS', 'status').lower()
-    fulfillment_col = config.get('FULFILLMENT_CHANNEL', 'fulfillment-channel').lower()
 
     # Get the B_SKU mapping
     amazon_sku_to_B_sku = retrieve_B_sku_mapping()
@@ -104,10 +173,9 @@ def get_borders_listings_from_all_listings_report(all_listings_report_df):
     # 1. Items that are in the B_SKU mapping
     mapped_borders = all_listings_report_df[all_listings_report_df[seller_sku_col].isin(amazon_sku_to_B_sku.keys())].copy()
     
-    # 2. Items that have 'Border' in the title and are fulfilled by Amazon
+    # 2. Items that have 'Border' in the title (without fulfillment channel filter)
     title_borders = all_listings_report_df[
         (all_listings_report_df[title_col].str.contains('Border', case=False, na=False)) &
-        (all_listings_report_df[fulfillment_col] == 'AMAZON_NA') &
         (~all_listings_report_df[seller_sku_col].isin(amazon_sku_to_B_sku.keys()))
     ].copy()
     
@@ -131,6 +199,7 @@ def get_borders_listings_from_all_listings_report(all_listings_report_df):
     filtered_df = filtered_df.drop_duplicates(subset=['SKU'], keep='first')
     
     return filtered_df
+
 
 def get_potential_not_mapped_borders(all_listings_report_df):
     """
@@ -157,6 +226,7 @@ def get_potential_not_mapped_borders(all_listings_report_df):
         (~all_listings_report_df[seller_sku_col].isin(amazon_sku_to_B_sku.keys()))
     ]
     return filtered_df
+
 
 def read_config():
     """
