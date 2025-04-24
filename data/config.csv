@@ -25,3 +25,5 @@ FBA_SKU,fba_sku
 M_SKU,m_sku
 M_30,m_30
 M_12M,m_12m
+WMA_FORECAST,WMA forecast
+REC_SHIP,Rec Ship

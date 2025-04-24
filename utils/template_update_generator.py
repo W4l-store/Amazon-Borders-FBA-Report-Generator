@@ -68,7 +68,7 @@ def create_new_template_csv(all_listings_report, fba_inventory_report):
         fba_inventory_report (pd.DataFrame): The FBA inventory report data.
     """
     # Define the initial columns for the template
-    initial_columns = ['id', 'Title', 'ASIN', 'SHP', 'N_Price', 'Price', '1_W', '2_W', '3_W', '4_W', 'Inbound', 'Inv', '30', '60', '90', '12m', '2yr', 'M_30', 'M_12m', 'Parts__Num', 'FBA_SKU', 'M_SKU', 'Status']
+    initial_columns = ['Title', 'ASIN', 'WMA forecast', 'Rec Ship', 'SHP', 'N_Price', 'Price', '1_W', '2_W', '3_W', '4_W', 'Inbound', 'Inv', '30', '60', '90', '12m', '2yr', 'M_30', 'M_12m', 'Parts__Num', 'FBA_SKU', 'M_SKU', 'Status']
     
     # Create a new DataFrame with the initial columns
     new_template_df = pd.DataFrame(columns=initial_columns)
@@ -130,9 +130,6 @@ def add_fba_listings_to_template(borders_listings, fba_skus, fba_merchant_mappin
             lambda fba_sku: ', '.join(fba_merchant_mapping.get(fba_sku, [])) if fba_sku in fba_merchant_mapping else ''
         )
     
-    # Fill the id column with sequential numbers
-    fba_template['id'] = range(1, len(fba_template) + 1)
-    
     return fba_template
 
 
@@ -180,10 +177,6 @@ def add_fbm_listings_to_template(borders_listings, merchant_skus, fba_template, 
     
     # Set M_SKU to the merchant SKU
     merchant_template['M_SKU'] = standalone_merchant_borders['SKU']
-    
-    # Set sequential IDs continuing from fba_template
-    start_id = len(fba_template) + 1
-    merchant_template['id'] = range(start_id, start_id + len(merchant_template))
     
     # Combine FBA template with merchant template
     final_template = pd.concat([fba_template, merchant_template], ignore_index=True)

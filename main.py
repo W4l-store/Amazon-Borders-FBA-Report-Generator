@@ -1,6 +1,9 @@
 import pandas as pd
 import os
 from utils.template_update_generator import preper_new_template_csv
+import numpy as np
+from utils.forecasting import generate_wma_forecast
+import traceback
 
 # Read constants from 'config.csv' and map 'const name' to 'column name'
 config_file_path = './data/config.csv'
@@ -38,7 +41,9 @@ required_constants = {
     'FBA_SKU',
     'M_SKU',
     'M_30',
-    'M_12M'
+    'M_12M',
+    'WMA_FORECAST',
+    'REC_SHIP'
 }
 
 # Initialize constants from config, converting to lower case
@@ -78,6 +83,8 @@ FBA_SKU = constants['FBA_SKU']
 M_SKU = constants['M_SKU']
 M_30 = constants['M_30']
 M_12M = constants['M_12M']
+WMA_FORECAST_COL = constants['WMA_FORECAST']
+REC_SHIP = constants['REC_SHIP']
 
 def columns_to_lower_case(df):
     """
@@ -410,6 +417,63 @@ def update_template_with_last_shipments_data(template_df, df_1_W, df_2_W, df_3_W
 
     return template_df
 
+def update_template_with_forecast(template_df, wma_forecast_dict):
+    """
+    Updates the template DataFrame with the WMA forecast data.
+    """
+    # Verify the forecast column exists
+    if WMA_FORECAST_COL not in template_df.columns:
+        return template_df
+    
+    for index, row in template_df.iterrows():
+        try:
+            if row[FBA_SKU] == '-':
+                if row[M_SKU] in wma_forecast_dict:
+                    template_df.at[index, WMA_FORECAST_COL] = wma_forecast_dict[row[M_SKU]]
+            else:
+                if row[FBA_SKU] in wma_forecast_dict:
+                    template_df.at[index, WMA_FORECAST_COL] = wma_forecast_dict[row[FBA_SKU]]
+        except Exception as e:
+            template_df.at[index, WMA_FORECAST_COL] = 0
+            
+    return template_df
+
+def calculate_recommended_shipment(template_df):
+    """
+    Calculates recommended shipment quantity based on:
+    REC_SHIP = max(0, WMA_FORECAST - (INBOUND + INV))
+    
+    Args:
+        template_df (pd.DataFrame): Template DataFrame with required columns
+        
+    Returns:
+        pd.DataFrame: Updated template DataFrame with REC_SHIP column
+    """
+    try:
+        # Ensure all required columns exist
+        required_cols = [INBOUND, INV, WMA_FORECAST_COL]
+        for col in required_cols:
+            if col not in template_df.columns:
+                raise KeyError(f"Required column '{col}' not found in template DataFrame")
+        
+        # Convert columns to numeric if they aren't already
+        template_df[INBOUND] = pd.to_numeric(template_df[INBOUND], errors='coerce').fillna(0)
+        template_df[INV] = pd.to_numeric(template_df[INV], errors='coerce').fillna(0)
+        template_df[WMA_FORECAST_COL] = pd.to_numeric(template_df[WMA_FORECAST_COL], errors='coerce').fillna(0)
+        
+        # Calculate recommended shipment
+        template_df[REC_SHIP] = template_df.apply(
+            lambda row: max(0, row[WMA_FORECAST_COL] - (row[INBOUND] + row[INV])),
+            axis=1
+        )
+        
+        return template_df
+        
+    except Exception as e:
+        print(f"Error calculating recommended shipment: {e}")
+        traceback.print_exc()
+        raise e
+
 def main():
     """
     Main function to orchestrate the data processing and updating the template DataFrame.
@@ -471,11 +535,42 @@ def main():
         else:
             print("One or more shipment data frames ('1_W', '2_W', '3_W', '4_W') not found.")
 
-        # Save the result
-        output_file_path = './results/result.csv'
-        os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
-        template_df.to_csv(output_file_path, index=False)
-        print(f"Data processing completed, results saved to '{output_file_path}'")
+        # Generate WMA forecast using the previously created function
+        try:
+            print('Calculating WMA forecast...')
+            wma_forecast_dict = generate_wma_forecast(
+                data_frames['all_listings_report'],
+                data_frames['30d'],
+                data_frames['60d'],
+                data_frames['90d'],
+                sku_col_listings=SELLER_SKU,  # SKU column in all_listings_report
+                sku_col_sales=SKU,           # SKU column in sales reports
+                units_col=UNITS_ORDERED      # Units ordered column name
+            )
+
+            template_df = update_template_with_forecast(template_df, wma_forecast_dict)
+            
+            # Calculate recommended shipment quantity
+            print('Calculating recommended shipment quantities...')
+            template_df = calculate_recommended_shipment(template_df)
+            
+            # Sort the DataFrame by multiple columns
+            print('Sorting results...')
+            template_df = template_df.sort_values(
+                by=[REC_SHIP, C30, M_30],  # Changed order: REC_SHIP, C30, M_30
+                ascending=[False, False, False],
+                na_position='last'
+            )
+
+            # Save the result
+            output_file_path = './results/result.csv'
+            os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+            template_df.to_csv(output_file_path, index=False)
+            print(f"Data processing completed, results saved to '{output_file_path}'")
+
+        except Exception as e:
+            print(f"Error generating WMA forecast or calculating recommended shipment: {e}")
+            traceback.print_exc()
 
     except KeyError as e:
         print(f"Error with column name:\n{e}.\n\nPlease check your './data/config.csv' for this constant name.\n")
@@ -485,7 +580,7 @@ def main():
         raise e
     except Exception as e:
         print(f"An unexpected error occurred:\n{e}")
-        raise  e # Re-raise the exception for further debugging if necessary
+        raise  e
 
 if __name__ == "__main__":
     main()
