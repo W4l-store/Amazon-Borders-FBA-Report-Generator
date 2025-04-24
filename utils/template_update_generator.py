@@ -68,7 +68,7 @@ def create_new_template_csv(all_listings_report, fba_inventory_report):
         fba_inventory_report (pd.DataFrame): The FBA inventory report data.
     """
     # Define the initial columns for the template
-    initial_columns = ['Title', 'ASIN', 'WMA forecast', 'Rec Ship', 'SHP', 'N_Price', 'Price', '1_W', '2_W', '3_W', '4_W', 'Inbound', 'Inv', '30', '60', '90', '12m', '2yr', 'M_30', 'M_12m', 'Parts__Num', 'FBA_SKU', 'M_SKU', 'Status']
+    initial_columns = ['Title', 'ASIN', 'WMA forecast', 'Rec Ship', 'SHP', 'N_Price', 'Price', '1_W', '2_W', '3_W', '4_W', 'Inbound', 'Inv', '30', '60', '90', '12m', '2yr', 'M_30', 'M_12m', 'Parts_num', 'FBA_SKU', 'M_SKU', 'Status']
     
     # Create a new DataFrame with the initial columns
     new_template_df = pd.DataFrame(columns=initial_columns)
@@ -90,7 +90,7 @@ def create_new_template_csv(all_listings_report, fba_inventory_report):
     # PART 2: Add standalone FBM listings to template
     template_with_fbm = add_fbm_listings_to_template(borders_listings, merchant_skus, fba_template, fba_merchant_mapping)
     
-    # PART 3: Add Parts__Num mapping after both FBA and FBM listings are added
+    # PART 3: Add Parts_num mapping after both FBA and FBM listings are added
     final_template = add_parts_num_mapping(template_with_fbm, fba_merchant_mapping)
     
     # Save the updated template to a CSV file
@@ -118,7 +118,7 @@ def add_fba_listings_to_template(borders_listings, fba_skus, fba_merchant_mappin
         fba_borders = borders_listings[borders_listings['SKU'].isin(fba_skus)].copy()
         
         # Fill fba_template with data from fba_borders for the required columns
-        for col in ['Title', 'ASIN', 'Parts__Num', 'Status']:
+        for col in ['Title', 'ASIN', 'Parts_num', 'Status']:
             if col in fba_borders.columns:
                 fba_template[col] = fba_borders[col]
         
@@ -186,15 +186,15 @@ def add_fbm_listings_to_template(borders_listings, merchant_skus, fba_template, 
 
 def add_parts_num_mapping(template_df, fba_merchant_mapping):
     """
-    Add Parts__Num mapping to the template after both FBA and FBM listings are added.
-    Maps Parts__Num based on either FBA SKU or its corresponding merchant SKUs.
+    Add Parts_num mapping to the template after both FBA and FBM listings are added.
+    Maps Parts_num based on either FBA SKU or its corresponding merchant SKUs.
     
     Args:
         template_df (pd.DataFrame): Template with both FBA and merchant SKUs
         fba_merchant_mapping (dict): Mapping between FBA and merchant SKUs
         
     Returns:
-        pd.DataFrame: Template with Parts__Num mapping added
+        pd.DataFrame: Template with Parts_num mapping added
     """
     amazon_sku_to_B_sku = retrieve_B_sku_mapping()
     
@@ -208,20 +208,20 @@ def add_parts_num_mapping(template_df, fba_merchant_mapping):
         
         # First try to map using FBA SKU
         if fba_sku in amazon_sku_to_B_sku:
-            result_df.at[idx, 'Parts__Num'] = amazon_sku_to_B_sku[fba_sku]
+            result_df.at[idx, 'Parts_num'] = amazon_sku_to_B_sku[fba_sku]
             continue
             
         # If no FBA mapping, try merchant SKUs
         mapped = False
         for m_sku in merchant_skus:
             if m_sku and m_sku in amazon_sku_to_B_sku:
-                result_df.at[idx, 'Parts__Num'] = amazon_sku_to_B_sku[m_sku]
+                result_df.at[idx, 'Parts_num'] = amazon_sku_to_B_sku[m_sku]
                 mapped = True
                 break
                 
         # If no mapping found at all
         if not mapped:
-            result_df.at[idx, 'Parts__Num'] = "UNMAPPED_BORDER"
+            result_df.at[idx, 'Parts_num'] = "UNMAPPED_BORDER"
     
     return result_df
 

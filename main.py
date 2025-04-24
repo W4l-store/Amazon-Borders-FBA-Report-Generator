@@ -193,24 +193,49 @@ def create_data_frames_from_directories(directory):
 def update_template_with_price_data(template_df, all_listings_report_df):
     """
     Updates the 'PRICE' column in the template DataFrame using data from the 'all_listings_report_df'.
+    If FBA_SKU is '-', it tries to find the price using the M_SKU.
     """
     # Check if required columns exist
     if SELLER_SKU not in all_listings_report_df.columns or PRICE not in all_listings_report_df.columns:
         raise KeyError(f"Required columns '{SELLER_SKU}' or '{PRICE}' not found in 'all_listings_report_df'.")
 
-    if FBA_SKU not in template_df.columns:
-        raise KeyError(f"Column '{FBA_SKU}' not found in 'template_df'.")
+    if FBA_SKU not in template_df.columns or M_SKU not in template_df.columns:
+        raise KeyError(f"Required columns '{FBA_SKU}' or '{M_SKU}' not found in 'template_df'.")
 
     # Create a mapping from SELLER_SKU to PRICE
+    # Ensure index is string type for reliable lookup
+    all_listings_report_df[SELLER_SKU] = all_listings_report_df[SELLER_SKU].astype(str)
     price_map = all_listings_report_df.set_index(SELLER_SKU)[PRICE].to_dict()
 
-    # Update the PRICE column in template_df using the mapping
-    template_df[PRICE] = template_df[FBA_SKU].map(price_map)
+    # Define a function to get the price based on FBA_SKU or M_SKU
+    def get_price(row):
+        fba_sku = str(row[FBA_SKU]).strip()
+        m_sku = str(row[M_SKU]).strip() # Renamed variable for clarity
 
-    # Optional: Print SKUs that were not found in the price_map
-    missing_skus = template_df[template_df[PRICE].isnull()][FBA_SKU].unique()
-    if len(missing_skus) > 0:
-        print(f"SKUs not found in all_listings_report: {missing_skus}")
+        # Default price if not found
+        price_to_set = np.nan
+
+        # Try FBA_SKU first (unless it's '-')
+        if fba_sku != '-' and fba_sku in price_map:
+            price_to_set = price_map[fba_sku]
+        # If FBA_SKU is '-', try the single M_SKU
+        elif fba_sku == '-' and pd.notna(m_sku) and m_sku != '' and m_sku in price_map:
+            price_to_set = price_map[m_sku]
+        # As a fallback, if FBA SKU exists but wasn't found initially (e.g., data type issues resolved by map creation)
+        elif fba_sku != '-' and fba_sku in price_map:
+            price_to_set = price_map[fba_sku]
+
+        return price_to_set
+
+    # Apply the function to update the PRICE column
+    template_df[PRICE] = template_df.apply(get_price, axis=1)
+
+    # Optional: Print SKUs that were not found in the price_map (might need adjustment based on new logic)
+    # Consider how to report missing SKUs now (e.g., rows where PRICE is still NaN)
+    missing_price_rows = template_df[template_df[PRICE].isnull()]
+    if not missing_price_rows.empty:
+        print(f"Could not find price for {len(missing_price_rows)} rows. Example FBA/M SKUs:")
+        print(missing_price_rows[[FBA_SKU, M_SKU]].head())
 
     return template_df
 
