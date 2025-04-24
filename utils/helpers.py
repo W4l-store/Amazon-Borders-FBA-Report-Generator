@@ -46,8 +46,6 @@ def retrieve_B_sku_mapping(region = "US", statuses_allowed=['Active', 'Inactive'
     status_column = f'status_{region}'
     fulfillment = f'fulfillment_{region}'
 
-
-    
     source_df = pd.read_csv(a_ph('/data/amazon/amz_sku_mapping.csv'), dtype=str)
     
     # filter the empty status columns
@@ -57,8 +55,6 @@ def retrieve_B_sku_mapping(region = "US", statuses_allowed=['Active', 'Inactive'
     # filter the BS_SKU columns from nan and empty values
     source_df = source_df[source_df['B_SKU'].notna()]
     source_df = source_df[source_df['B_SKU'] != '']
-    # filter the fulfillment column to only "AMAZON_NA" values
-    source_df = source_df[source_df[fulfillment] == 'AMAZON_NA']
 
     # to dict map
     amazon_sku_to_B_sku = dict(zip(source_df['seller_sku'], source_df['B_SKU']))

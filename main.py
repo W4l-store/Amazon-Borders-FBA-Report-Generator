@@ -323,6 +323,7 @@ def sales_to_dict(sales_report_df):
 def update_template_with_sales_data(template_df, df_30, df_60, df_90, df_12_m, df_2yr):
     """
     Updates the template DataFrame with sales data for 30, 60, 90 days, and 12 months.
+    Also processes merchant SKU sales for M_30 and M_12M columns.
     """
     # Generate sales data dictionaries
     sales_30 = sales_to_dict(df_30)
@@ -331,12 +332,26 @@ def update_template_with_sales_data(template_df, df_30, df_60, df_90, df_12_m, d
     sales_12_m = sales_to_dict(df_12_m)
     sales_2yr = sales_to_dict(df_2yr)
 
-    # Update the template DataFrame
+    # Update the template DataFrame with FBA SKU sales
     template_df[C30] = template_df[FBA_SKU].map(sales_30).fillna(0)
     template_df[C60] = template_df[FBA_SKU].map(sales_60).fillna(0)
     template_df[C90] = template_df[FBA_SKU].map(sales_90).fillna(0)
     template_df[C12M] = template_df[FBA_SKU].map(sales_12_m).fillna(0)
     template_df[C2YR] = template_df[FBA_SKU].map(sales_2yr).fillna(0)
+    
+    # Process merchant SKU sales
+    def get_merchant_sales(merchant_sku_str, sales_dict):
+        if pd.isna(merchant_sku_str) or merchant_sku_str == '':
+            return 0
+        # Split merchant SKUs by comma and remove whitespace
+        merchant_skus = [sku.strip() for sku in str(merchant_sku_str).split(',')]
+        # Sum up sales for all merchant SKUs
+        total_sales = sum(sales_dict.get(sku, 0) for sku in merchant_skus)
+        return total_sales
+
+    # Update merchant sales columns
+    template_df[M_30] = template_df[M_SKU].apply(lambda x: get_merchant_sales(x, sales_30))
+    template_df[M_12M] = template_df[M_SKU].apply(lambda x: get_merchant_sales(x, sales_12_m))
     
     return template_df
 

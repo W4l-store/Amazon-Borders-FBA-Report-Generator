@@ -87,9 +87,11 @@ def create_new_template_csv(all_listings_report, fba_inventory_report):
     # PART 1: Add FBA listings to template
     fba_template = add_fba_listings_to_template(borders_listings, fba_skus, fba_merchant_mapping, initial_columns)
     
-    # PART 2: Add standalone FBM listings to template (placeholder for now)
-    # This will be implemented later
-    final_template = add_fbm_listings_to_template(borders_listings, merchant_skus, fba_template)
+    # PART 2: Add standalone FBM listings to template
+    template_with_fbm = add_fbm_listings_to_template(borders_listings, merchant_skus, fba_template, fba_merchant_mapping)
+    
+    # PART 3: Add Parts__Num mapping after both FBA and FBM listings are added
+    final_template = add_parts_num_mapping(template_with_fbm, fba_merchant_mapping)
     
     # Save the updated template to a CSV file
     final_template.to_csv(a_ph('/data/template.csv'), index=False)
@@ -134,22 +136,101 @@ def add_fba_listings_to_template(borders_listings, fba_skus, fba_merchant_mappin
     return fba_template
 
 
-def add_fbm_listings_to_template(borders_listings, merchant_skus, fba_template):
+def add_fbm_listings_to_template(borders_listings, merchant_skus, fba_template, fba_merchant_mapping):
     """
     Add standalone FBM (Merchant) listings to the template.
-    This function will be implemented in the future.
+    These are border listings that only exist as merchant fulfilled, without FBA counterparts.
     
     Args:
-        borders_listings (pd.DataFrame): The borders listings data.
-        merchant_skus (set): Set of SKUs classified as Merchant.
-        fba_template (pd.DataFrame): Template with FBA listings already added.
+        borders_listings (pd.DataFrame): The borders listings data
+        merchant_skus (set): Set of SKUs classified as Merchant
+        fba_template (pd.DataFrame): Template with FBA listings already added
+        fba_merchant_mapping (dict): Mapping of FBA SKUs to Merchant SKUs
         
     Returns:
-        pd.DataFrame: Final template with both FBA and FBM listings.
+        pd.DataFrame: Template with both FBA and standalone FBM listings
     """
-    # For now, just return the FBA template without changes
-    # This placeholder will be expanded in the future to add standalone FBM listings
-    return fba_template
+    # Get all merchant SKUs that are mapped to FBA SKUs
+    mapped_merchant_skus = set()
+    for fba_sku, m_skus in fba_merchant_mapping.items():
+        mapped_merchant_skus.update(m_skus)
+    
+    # Get standalone merchant SKUs (those not mapped to any FBA SKU)
+    standalone_merchant_skus = merchant_skus - mapped_merchant_skus
+    
+    # Filter borders_listings to get only standalone merchant listings
+    standalone_merchant_borders = borders_listings[
+        borders_listings['SKU'].isin(standalone_merchant_skus)
+    ].copy()
+    
+    # If no standalone merchant listings found, return the original template
+    if len(standalone_merchant_borders) == 0:
+        return fba_template
+        
+    # Create DataFrame for standalone merchant listings
+    merchant_template = pd.DataFrame(columns=fba_template.columns)
+    
+    # Copy relevant columns from standalone_merchant_borders
+    for col in ['Title', 'ASIN', 'Status']:
+        if col in standalone_merchant_borders.columns:
+            merchant_template[col] = standalone_merchant_borders[col]
+    
+    # Set FBA_SKU to "-" for standalone merchant listings
+    merchant_template['FBA_SKU'] = "-"
+    
+    # Set M_SKU to the merchant SKU
+    merchant_template['M_SKU'] = standalone_merchant_borders['SKU']
+    
+    # Set sequential IDs continuing from fba_template
+    start_id = len(fba_template) + 1
+    merchant_template['id'] = range(start_id, start_id + len(merchant_template))
+    
+    # Combine FBA template with merchant template
+    final_template = pd.concat([fba_template, merchant_template], ignore_index=True)
+    
+    return final_template
+
+
+def add_parts_num_mapping(template_df, fba_merchant_mapping):
+    """
+    Add Parts__Num mapping to the template after both FBA and FBM listings are added.
+    Maps Parts__Num based on either FBA SKU or its corresponding merchant SKUs.
+    
+    Args:
+        template_df (pd.DataFrame): Template with both FBA and merchant SKUs
+        fba_merchant_mapping (dict): Mapping between FBA and merchant SKUs
+        
+    Returns:
+        pd.DataFrame: Template with Parts__Num mapping added
+    """
+    amazon_sku_to_B_sku = retrieve_B_sku_mapping()
+    
+    # Create a copy to avoid modifying the original
+    result_df = template_df.copy()
+    
+    # Iterate through each row in the template
+    for idx, row in result_df.iterrows():
+        fba_sku = row['FBA_SKU']
+        merchant_skus = row['M_SKU'].split(', ') if row['M_SKU'] else []
+        
+        # First try to map using FBA SKU
+        if fba_sku in amazon_sku_to_B_sku:
+            result_df.at[idx, 'Parts__Num'] = amazon_sku_to_B_sku[fba_sku]
+            continue
+            
+        # If no FBA mapping, try merchant SKUs
+        mapped = False
+        for m_sku in merchant_skus:
+            if m_sku and m_sku in amazon_sku_to_B_sku:
+                result_df.at[idx, 'Parts__Num'] = amazon_sku_to_B_sku[m_sku]
+                mapped = True
+                break
+                
+        # If no mapping found at all
+        if not mapped:
+            result_df.at[idx, 'Parts__Num'] = "UNMAPPED_BORDER"
+    
+    return result_df
 
 
 def get_borders_listings_from_all_listings_report(all_listings_report_df):
@@ -181,13 +262,6 @@ def get_borders_listings_from_all_listings_report(all_listings_report_df):
     
     # Combine both sets of borders
     filtered_df = pd.concat([mapped_borders, title_borders], ignore_index=True)
-    
-    # Fill Parts__Num column with the B_SKU for mapped items
-    filtered_df.loc[:, 'Parts__Num'] = filtered_df[seller_sku_col].map(amazon_sku_to_B_sku)
-    
-    # For borders identified by title (not in mapping), set Parts__Num to "UNMAPPED_BORDER"
-    mask = filtered_df['Parts__Num'].isna()
-    filtered_df.loc[mask, 'Parts__Num'] = "UNMAPPED_BORDER"
     
     # Rename columns to match the template
     filtered_df = filtered_df.rename(columns={title_col: 'Title', asin_col: 'ASIN', seller_sku_col: 'SKU', status_col: 'Status'})
