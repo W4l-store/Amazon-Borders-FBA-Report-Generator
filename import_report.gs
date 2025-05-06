@@ -132,20 +132,23 @@ function applyColumnFormats(sheet) {
 
   const lastCol = sheet.getLastColumn();
 
-  // Set number formats and right alignment for price columns
-  const priceColumns = [6, 7]; // N_Price, Price
-  priceColumns.forEach((col) => {
+  // Set number formats and right alignment for columns needing decimals (like price, forecast)
+  const decimalColumns = [
+    3,
+    4,
+    6,
+    7, // WMA forecast, Rec Ship, N_Price, Price
+  ];
+  decimalColumns.forEach((col) => {
     if (col <= lastCol) {
       const range = sheet.getRange(2, col, lrow - 1, 1);
-      range.setNumberFormat("#,##0.00");
+      range.setNumberFormat("#,##0.00"); // Format with 2 decimal places
       range.setHorizontalAlignment("right");
     }
   });
 
-  // Set number formats and right alignment for integer columns
-  const integerColumns = [
-    3, 4, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-  ];
+  // Set number formats and right alignment for integer columns (excluding those handled above)
+  const integerColumns = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
   integerColumns.forEach((col) => {
     if (col <= lastCol) {
       const range = sheet.getRange(2, col, lrow - 1, 1);

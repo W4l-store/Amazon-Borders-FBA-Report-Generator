@@ -20,6 +20,14 @@ if WEIGHT_SUM <= 0:
     raise ValueError(f"Sum of WMA weights ({WEIGHT_SUM}) must be positive.")
 # ------------------------------------
 
+# --- Minimum Forecast Floor Configuration ---
+# If WMA forecast is 0, but there were sales in the last 2 years,
+# set the forecast to a small minimum value instead of 0.
+# This value is calculated as a fraction of the average monthly sales over 2 years.
+# Set MIN_FORECAST_FLOOR_FRACTION to 0 to disable this feature.
+MIN_FORECAST_FLOOR_FRACTION = 0.05 # e.g., 0.05 means 5% of average monthly sales over 2 years
+# ------------------------------------
+
 def _clean_sales_data(df, sku_col, units_col, period_suffix):
     """Internal helper to clean and prepare sales data for a period."""
     if df is None or df.empty:
@@ -50,9 +58,10 @@ def _clean_sales_data(df, sku_col, units_col, period_suffix):
     df_agg = df_clean.groupby(sku_col).sum() # This returns a DataFrame with sku_col as the index
     return df_agg
 
-def generate_wma_forecast(all_listings_df, df_30, df_60, df_90, sku_col_listings, sku_col_sales, units_col):
+def generate_wma_forecast(all_listings_df, df_30, df_60, df_90, df_12m, df_2yr, sku_col_listings, sku_col_sales, units_col):
     """
     Generates a Weighted Moving Average (WMA) forecast for the next month.
+    Includes a minimum forecast floor for items with historical sales but zero WMA.
 
     Uses all_listings_df to get the full list of SKUs, ensuring forecasts
     are generated even for items with zero sales in the recent periods.
@@ -62,12 +71,14 @@ def generate_wma_forecast(all_listings_df, df_30, df_60, df_90, sku_col_listings
         df_30 (pd.DataFrame | None): DataFrame with sales for the last 30 days.
         df_60 (pd.DataFrame | None): DataFrame with sales for the last 60 days.
         df_90 (pd.DataFrame | None): DataFrame with sales for the last 90 days.
+        df_12m (pd.DataFrame | None): DataFrame with sales for the last 12 months.
+        df_2yr (pd.DataFrame | None): DataFrame with sales for the last 2 years.
         sku_col_listings (str): Name of the SKU column in all_listings_df.
-        sku_col_sales (str): Name of the SKU column in the sales DataFrames (df_30, df_60, df_90).
+        sku_col_sales (str): Name of the SKU column in the sales DataFrames.
         units_col (str): Name of the 'units ordered' column in sales DataFrames.
 
     Returns:
-        dict: A dictionary mapping SKU (from sku_col_listings) to its WMA forecast value.
+        dict: A dictionary mapping SKU (from sku_col_listings) to its forecast value.
               Returns an empty dictionary if essential inputs are missing or invalid.
     """
     print("Starting WMA forecast generation...")
@@ -80,8 +91,9 @@ def generate_wma_forecast(all_listings_df, df_30, df_60, df_90, sku_col_listings
         print(f"Error: SKU column '{sku_col_listings}' not found in all_listings_df.")
         return {}
     # Check if any sales dataframes are provided. If not, WMA will be 0, which might be acceptable.
-    if df_30 is None and df_60 is None and df_90 is None:
-         print("Warning: All sales DataFrames (30d, 60d, 90d) are None. Forecast will be zero for all items.")
+    # Now also consider 12m and 2yr for the floor calculation.
+    if df_30 is None and df_60 is None and df_90 is None and df_12m is None and df_2yr is None:
+         print("Warning: All sales DataFrames (30d, 60d, 90d, 12m, 2yr) are None. Forecast will be zero for all items.")
          # Proceed, but expect zero forecast.
 
     # Weights are checked globally at the start of the script.
@@ -103,9 +115,12 @@ def generate_wma_forecast(all_listings_df, df_30, df_60, df_90, sku_col_listings
         sales_30 = _clean_sales_data(df_30, sku_col_sales, units_col, '30d')
         sales_60 = _clean_sales_data(df_60, sku_col_sales, units_col, '60d')
         sales_90 = _clean_sales_data(df_90, sku_col_sales, units_col, '90d')
+        sales_12m = _clean_sales_data(df_12m, sku_col_sales, units_col, '12m')
+        sales_2yr = _clean_sales_data(df_2yr, sku_col_sales, units_col, '2yr')
 
         # Check if cleaning resulted in non-empty DataFrames before joining
-        valid_sales_dfs = [df for df in [sales_90, sales_60, sales_30] if isinstance(df, pd.DataFrame) and not df.empty]
+        # Include 12m and 2yr in the list of DFs to join
+        valid_sales_dfs = [df for df in [sales_90, sales_60, sales_30, sales_12m, sales_2yr] if isinstance(df, pd.DataFrame) and not df.empty]
 
         # 3. Combine sales data with the forecast base
         # Use left join to keep all SKUs from forecast_base, fill missing sales with 0
@@ -114,7 +129,8 @@ def generate_wma_forecast(all_listings_df, df_30, df_60, df_90, sku_col_listings
         else:
             # If no valid sales data, create DataFrame with 0s for expected columns
             combined_sales = forecast_base.copy()
-            for period in ['90d', '60d', '30d']:
+            # Include 12m and 2yr columns
+            for period in ['90d', '60d', '30d', '12m', '2yr']:
                 col_name = f'{units_col}_{period}'
                 if col_name not in combined_sales.columns:
                     combined_sales[col_name] = 0.0 # Ensure float type
@@ -136,11 +152,17 @@ def generate_wma_forecast(all_listings_df, df_30, df_60, df_90, sku_col_listings
         units_30d_col = f'{units_col}_30d'
         units_60d_col = f'{units_col}_60d'
         units_90d_col = f'{units_col}_90d'
+        # Add columns for 12m and 2yr sales
+        units_12m_col = f'{units_col}_12m'
+        units_2yr_col = f'{units_col}_2yr'
 
         # Ensure columns exist, default to 0 Series if not
         s_30 = combined_sales[units_30d_col] if units_30d_col in combined_sales else pd.Series(0.0, index=combined_sales.index)
         s_60 = combined_sales[units_60d_col] if units_60d_col in combined_sales else pd.Series(0.0, index=combined_sales.index)
         s_90 = combined_sales[units_90d_col] if units_90d_col in combined_sales else pd.Series(0.0, index=combined_sales.index)
+        # Get 12m and 2yr sales Series
+        s_12m = combined_sales[units_12m_col] if units_12m_col in combined_sales else pd.Series(0.0, index=combined_sales.index)
+        s_2yr = combined_sales[units_2yr_col] if units_2yr_col in combined_sales else pd.Series(0.0, index=combined_sales.index)
 
         # M1: Sales in the last 30 days
         m1 = s_30
@@ -157,11 +179,32 @@ def generate_wma_forecast(all_listings_df, df_30, df_60, df_90, sku_col_listings
         # WEIGHT_SUM is pre-calculated and checked globally
         wma_values = (WMA_WEIGHT_M3 * m3 + WMA_WEIGHT_M2 * m2 + WMA_WEIGHT_M1 * m1) / WEIGHT_SUM
 
-        # 6. Round the forecast
-        wma_rounded = wma_values.round(2) # Round to 2 decimal places
+        # 6. Calculate Minimum Forecast Floor (if enabled)
+        final_forecast = wma_values.copy() # Start with WMA values
+        if MIN_FORECAST_FLOOR_FRACTION > 0:
+            # Calculate average monthly sales over 2 years (avoid division by zero)
+            # Use s_2yr directly (total sales over 2 years)
+            avg_monthly_2yr = s_2yr / 24.0
+            # Calculate the floor value
+            floor_values = (avg_monthly_2yr * MIN_FORECAST_FLOOR_FRACTION).clip(lower=0) # Ensure floor is not negative
 
-        # 7. Convert the resulting Series (indexed by SKU) to a dictionary
-        forecast_dict = wma_rounded.to_dict()
+            # Apply the floor where WMA is zero (or very close to zero) but 2yr sales exist
+            # Using a small epsilon to handle potential floating point inaccuracies
+            epsilon = 1e-6
+            apply_floor_mask = (wma_values <= epsilon) & (s_2yr > 0)
+            # Ensure the floor is at least 0.01 to avoid rounding to zero
+            final_forecast[apply_floor_mask] = np.maximum(floor_values[apply_floor_mask], 0.01)
+
+            # Optional: Print how many SKUs had the floor applied
+            num_floored = apply_floor_mask.sum()
+            if num_floored > 0:
+                print(f"Applied minimum forecast floor to {num_floored} SKUs.")
+
+        # 7. Round the final forecast
+        final_forecast_rounded = final_forecast.round(2) # Round to 2 decimal places
+
+        # 8. Convert the resulting Series (indexed by SKU) to a dictionary
+        forecast_dict = final_forecast_rounded.to_dict()
 
         print(f"WMA forecast generated successfully for {len(forecast_dict)} SKUs.")
         return forecast_dict

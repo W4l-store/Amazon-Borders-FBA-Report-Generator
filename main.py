@@ -568,30 +568,36 @@ def main():
                 data_frames['30d'],
                 data_frames['60d'],
                 data_frames['90d'],
+                data_frames.get('12m'), # Use .get() to handle potentially missing keys gracefully
+                data_frames.get('2yr'),  # Use .get() for safety
                 sku_col_listings=SELLER_SKU,  # SKU column in all_listings_report
                 sku_col_sales=SKU,           # SKU column in sales reports
                 units_col=UNITS_ORDERED      # Units ordered column name
             )
 
-            template_df = update_template_with_forecast(template_df, wma_forecast_dict)
-            
-            # Calculate recommended shipment quantity
-            print('Calculating recommended shipment quantities...')
-            template_df = calculate_recommended_shipment(template_df)
-            
-            # Sort the DataFrame by multiple columns
-            print('Sorting results...')
-            template_df = template_df.sort_values(
-                by=[REC_SHIP, C30, M_30],  # Changed order: REC_SHIP, C30, M_30
-                ascending=[False, False, False],
-                na_position='last'
-            )
+            # Check if forecast generation was successful before proceeding
+            if not wma_forecast_dict:
+                print("WMA forecast dictionary is empty. Skipping forecast update and subsequent steps.")
+            else:
+                template_df = update_template_with_forecast(template_df, wma_forecast_dict)
+                
+                # Calculate recommended shipment quantity
+                print('Calculating recommended shipment quantities...')
+                template_df = calculate_recommended_shipment(template_df)
+                
+                # Sort the DataFrame by multiple columns
+                print('Sorting results...')
+                template_df = template_df.sort_values(
+                    by=[REC_SHIP, C30, M_30],  # Changed order: REC_SHIP, C30, M_30
+                    ascending=[False, False, False],
+                    na_position='last'
+                )
 
-            # Save the result
-            output_file_path = './results/result.csv'
-            os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
-            template_df.to_csv(output_file_path, index=False)
-            print(f"Data processing completed, results saved to '{output_file_path}'")
+                # Save the result
+                output_file_path = './results/result.csv'
+                os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+                template_df.to_csv(output_file_path, index=False)
+                print(f"Data processing completed, results saved to '{output_file_path}'")
 
         except Exception as e:
             print(f"Error generating WMA forecast or calculating recommended shipment: {e}")
