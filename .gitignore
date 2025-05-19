@@ -38,8 +38,9 @@
 !/results/.gitkeep
 
 # Don't ignore the 'setup' directory and its contents
-!/Setup AMAZON BORDERS FBA REPORT /
-!/Setup AMAZON BORDERS FBA REPORT /**
+!/Setup AMAZON BORDERS FBA REPORT/
+!/Setup AMAZON BORDERS FBA REPORT/**
+/Setup AMAZON BORDERS FBA REPORT/.env
 
 # Python-specific ignores
 *.pyc

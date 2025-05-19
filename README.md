@@ -2,30 +2,35 @@
 
 ## Table of Contents
 
-1. [Introduction](#introduction)
-2. [Initial Setup](#initial-setup)
-   - [Install Git](#install-git)
-   - [Install Python](#install-python)
-   - [Install ngrok](#install-ngrok)
-   - [Set Up Python Path](#set-up-python-path)
-   - [Install the Application](#install-the-application)
-3. [Generating the Report](#generating-the-report)
-   - [Export Files from Amazon](#export-files-from-amazon)
-   - [Run the Script](#run-the-script)
-   - [Understand the Output](#understand-the-output)
-   - [Import CSV to Google Docs](#import-csv-to-google-docs)
-   - [Close the Server](#close-the-server)
-4. [Folder Cleaning Function](#folder-cleaning-function)
-5. [Configuration File Usage](#configuration-file-usage)
-6. [Key Features & Logic](#key-features--logic)
-   - [FBA/Merchant Classification](#fbamerchant-classification)
-   - [SKU Mapping and Border Identification](#sku-mapping-and-border-identification)
-   - [Sales Forecasting & Shipment Recommendation](#sales-forecasting--shipment-recommendation)
-7. [Troubleshooting](#troubleshooting)
+- [Amazon Borders FBA Report Generator](#amazon-borders-fba-report-generator)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Initial Setup](#initial-setup)
+    - [Install Git](#install-git)
+    - [Install Python](#install-python)
+    - [Install ngrok](#install-ngrok)
+    - [Set Up Python Path](#set-up-python-path)
+    - [Install the Application](#install-the-application)
+  - [Generating the Report](#generating-the-report)
+    - [Export Files from Amazon](#export-files-from-amazon)
+      - [Handling Weekly Shipment Reports](#handling-weekly-shipment-reports)
+    - [Run the Script](#run-the-script)
+    - [Understand the Output](#understand-the-output)
+    - [Import CSV to Google Docs](#import-csv-to-google-docs)
+    - [Close the Server](#close-the-server)
+  - [Folder Cleaning Function](#folder-cleaning-function)
+  - [Configuration File Usage](#configuration-file-usage)
+    - [How to Use the Configuration File](#how-to-use-the-configuration-file)
+    - [Handling Errors Related to Column Names](#handling-errors-related-to-column-names)
+  - [Key Features \& Logic](#key-features--logic)
+    - [FBA/Merchant Classification](#fbamerchant-classification)
+    - [SKU Mapping and Border Identification](#sku-mapping-and-border-identification)
+    - [Sales Forecasting \& Shipment Recommendation](#sales-forecasting--shipment-recommendation)
+  - [Troubleshooting](#troubleshooting)
 
 ## Introduction
 
-The Amazon Borders FBA Report Generator is a tool designed to help Amazon sellers generate comprehensive reports for their FBA (Fulfillment by Amazon) business, specifically tailored for border products. It integrates data from multiple Amazon reports, classifies listings, calculates sales forecasts, recommends shipment quantities, and identifies potential new border listings. This README file provides step-by-step instructions on how to set up and use the tool.
+This tool is designed for OntWall to simplify the generation of a weekly report. This report is used to prepare orders for sending products to Amazon FBA. It integrates data from multiple Amazon reports, classifies listings, calculates sales forecasts, recommends shipment quantities, and identifies potential new border listings. This README file provides step-by-step instructions on how to set up and use the tool.
 
 ## Initial Setup
 
@@ -128,10 +133,12 @@ The main output is the `results/result.csv` file, which is also imported into Go
 6. If an error occurs, delete the newly created table, restart the server, and try again.
 7. If it still doesn't work, contact the script creator. You can still manually input data from the file `results/result.csv`.
 
+**Note:** If you have created a new Google Sheet and it doesn't have the macro, you need to add it using Google Apps Script. Use the code from the `import_report.gs` file located in the project root for the function.
+
 ### Close the Server
 
 1. When the macro execution is complete, press any key in the terminal to close the server.
-2. Do not close the terminal using the close button, as it's essential to properly terminate the server execution.
+2. Do not close the terminal using the close button, as it's may live the server running on the background, what can cause errors in the future.
 
 ## Folder Cleaning Function
 
@@ -139,7 +146,7 @@ This function is designed to eliminate the need for manual deletion of files in 
 
 To run the function:
 
-1. Execute the `CLEAN_FOLDERS.bat` file.
+1. Execute the `CLEAN_FOLDERS.bat` (or `CLEAN_FOLDERS.command`/`CLEAN_FOLDERS.sh` on macOS/Linux) file.
 
 ## Configuration File Usage
 
@@ -180,19 +187,19 @@ The script employs a robust classification logic to accurately distinguish betwe
 (Formerly "Template Update and SKU Mapping")
 
 1.  **Automatic Template Update:** The `data/template.csv` file (used as a base for the final report) is automatically updated using the latest "All listings report" each time the script runs. This ensures new listings are included.
-2.  **SKU Mapping Download:** The script downloads SKU mapping data from a configured Google Sheet. This mapping is crucial for identifying which listings are designated 'borders'.
-3.  **Border Identification:** Listings are identified as 'borders' based on whether they have an entry in the downloaded mapping data.
+2.  **SKU Mapping Download:** The script downloads SKU mapping data from a configured Google Sheet `sku_mapping`. This mapping is crucial for identifying which listings are designated 'borders'.
+3.  **Border Identification:** Listings are identified as 'borders' based on whether they have an entry in the downloaded mapping data or have word 'border' in the title.
 4.  **Potential Unmapped Borders:** The script identifies listings that might be borders but are not yet mapped. Criteria include:
     *   Not having a 'border' mapping.
     *   Not having a 'Blue system' mapping.
     *   Containing "border" in the title OR having a price between $17 and $20 (configurable thresholds might apply).
-    *   These potential borders are saved to `results/potential_not_mapped_borders.csv` for manual review and updating in the Google Sheet mapping source. Maintaining accurate mapping is vital.
+    *   These potential borders are saved to `results/potential_not_mapped_borders.csv` for manual review and updating in the Google Sheet `sku_mapping`. Maintaining accurate mapping is vital.
 
 ### Sales Forecasting & Shipment Recommendation
 
 To simplify inventory management, the script includes forecasting:
 
-1.  **WMA Forecast:** Calculates a Weighted Moving Average forecast (`Forecast` column) for the next month's FBA sales. It uses sales data from the 30d, 60d, and 90d reports, typically weighting recent sales more heavily (e.g., 3:2:1).
+1.  **WMA Forecast:** Calculates a Weighted Moving Average forecast (`Forecast` column) for the next month's FBA sales. It uses sales data from the 30d, 60d, and 90d reports, and 12m report for M_12M calculation. Typically weighting recent sales more heavily (e.g., 3:2:1).
 2.  **Recommended Shipment:** Calculates a recommended shipment quantity (`Rec Ship` column) using the formula: `Forecast - FBA Inventory - Inbound Quantity`. This provides a quick indicator of how much stock might be needed.
 
 ## Troubleshooting
