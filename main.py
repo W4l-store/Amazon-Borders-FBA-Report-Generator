@@ -467,6 +467,9 @@ def calculate_recommended_shipment(template_df):
     """
     Calculates recommended shipment quantity based on:
     REC_SHIP = max(0, WMA_FORECAST - (INBOUND + INV))
+    If 1_w column contains a value greater than INBOUND, add it to INBOUND as it represents
+    additional shipments not yet captured in the inbound report.
+    Empty values in 1_w will remain empty.
     
     Args:
         template_df (pd.DataFrame): Template DataFrame with required columns
@@ -486,11 +489,35 @@ def calculate_recommended_shipment(template_df):
         template_df[INV] = pd.to_numeric(template_df[INV], errors='coerce').fillna(0)
         template_df[WMA_FORECAST_COL] = pd.to_numeric(template_df[WMA_FORECAST_COL], errors='coerce').fillna(0)
         
-        # Calculate recommended shipment
-        template_df[REC_SHIP] = template_df.apply(
-            lambda row: max(0, row[WMA_FORECAST_COL] - (row[INBOUND] + row[INV])),
-            axis=1
-        )
+        # Check if 1_w column exists
+        if '1_w' in template_df.columns:
+            # Create a copy of 1_w to preserve original values
+            original_1w = template_df['1_w'].copy()
+            
+            # Convert 1_w to numeric for calculation, but don't fillna yet
+            numeric_1w = pd.to_numeric(template_df['1_w'], errors='coerce')
+            
+            # Define a function to calculate REC_SHIP considering 1_w
+            def calculate_rec_ship(row):
+                # If 1_w is empty or not numeric, use just INBOUND
+                if pd.isna(numeric_1w[row.name]) or original_1w[row.name] == '':
+                    return max(0, row[WMA_FORECAST_COL] - (row[INBOUND] + row[INV]))
+                else:
+                    # If 1_w has numeric value and is greater than INBOUND, add it to INBOUND
+                    one_w_value = numeric_1w[row.name]
+                    if one_w_value > row[INBOUND]:
+                        return max(0, row[WMA_FORECAST_COL] - ((row[INBOUND] + one_w_value) + row[INV]))
+                    else:
+                        return max(0, row[WMA_FORECAST_COL] - (row[INBOUND] + row[INV]))
+            
+            # Apply the function
+            template_df[REC_SHIP] = template_df.apply(calculate_rec_ship, axis=1)
+        else:
+            # Original calculation if 1_w doesn't exist
+            template_df[REC_SHIP] = template_df.apply(
+                lambda row: max(0, row[WMA_FORECAST_COL] - (row[INBOUND] + row[INV])),
+                axis=1
+            )
         
         return template_df
         
